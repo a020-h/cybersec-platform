@@ -119,8 +119,8 @@ export default function Dashboard() {
                   <div className="bg-white rounded-full h-2 transition-all" style={{ width: `${percent}%` }}></div>
                 </div>
                 <button
-                  onClick={() => router.push(`/dashboard/course/${course.id}`)}
-                  className="mt-4 w-full bg-white bg-opacity-20 hover:bg-opacity-30 py-2 rounded-lg text-sm font-bold transition text-white"
+  		onClick={() => window.location.href = `/dashboard/course/${course.id}`}
+                  className="mt-4 w-full bg-black bg-opacity-40 hover:bg-opacity-60 py-2 rounded-lg text-sm font-bold transition text-white border border-white border-opacity-30"
                 >
                   {percent === 100 ? '✓ مكتمل — مراجعة' : percent > 0 ? 'متابعة المسار ←' : 'ابدأ المسار ←'}
                 </button>
