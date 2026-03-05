@@ -3,218 +3,152 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter, useParams } from 'next/navigation'
 
-const coursesData: Record<string, any> = {
-  '1': {
-    title: 'أساسيات الأمن السيبراني',
-    icon: '🛡️',
-    color: 'from-green-600 to-green-800',
-    lessons: [
-      { id: 1, title: 'ما هو الأمن السيبراني؟', duration: '10 دقائق', points: 10, content: `## ما هو الأمن السيبراني؟\n\nالأمن السيبراني هو ممارسة حماية الأنظمة والشبكات والبرامج من الهجمات الرقمية.\n\n### لماذا هو مهم؟\n- 🔴 تكلّف الجرائم الإلكترونية العالم **تريليونات الدولارات** سنوياً\n- 🔴 كل **39 ثانية** يحدث هجوم إلكتروني\n- 🔴 **95%** من الاختراقات سببها خطأ بشري\n\n### أنواع التهديدات الرئيسية\n1. **Malware** — برمجيات خبيثة تضر بالأجهزة\n2. **Phishing** — التصيد الاحتيالي لسرقة البيانات\n3. **Ransomware** — تشفير ملفاتك وطلب فدية\n4. **DDoS** — إغراق الخوادم بالطلبات\n\n> 💡 **القاعدة الذهبية:** لا تثق بأي رابط أو إيميل غير متوقع!` },
-      { id: 2, title: 'مبدأ CIA Triad', duration: '15 دقائق', points: 15, content: `## مبدأ CIA Triad — ثالوث الأمن\n\nهذا المبدأ هو أساس كل أمن سيبراني في العالم.\n\n### C — Confidentiality (السرية)\nالبيانات لا يراها إلا من يملك الصلاحية.\n- مثال: كلمة مرور الحساب البنكي\n\n### I — Integrity (النزاهة)\nالبيانات لم تُعدَّل أو تُزوَّر.\n- مثال: رصيدك في البنك لم يتغير بدون إذنك\n\n### A — Availability (التوفر)\nالخدمة متاحة دائماً لمن يحتاجها.\n- مثال: موقع البنك يعمل 24/7\n\n> 💡 أي هجوم إلكتروني يستهدف واحداً من هذه المبادئ الثلاثة!` },
-      { id: 3, title: 'أنواع المهاجمين (Threat Actors)', duration: '12 دقائق', points: 20, content: `## من هم المهاجمون؟\n\n### 1. Script Kiddies 👶\nمبتدئون يستخدمون أدوات جاهزة بدون فهم.\n- **الخطر:** منخفض نسبياً\n\n### 2. Hacktivists 🏴\nمخترقون لأهداف سياسية أو اجتماعية.\n- **مثال:** مجموعة Anonymous\n\n### 3. Cybercriminals 💰\nهدفهم المال فقط.\n- **مثال:** عصابات Ransomware\n\n### 4. Nation-State Actors 🏛️\nمخترقون تموّلهم حكومات.\n- **الخطر:** عالي جداً\n\n### 5. Insider Threats 😈\nموظفون داخل الشركة.\n- **أخطر أنواع التهديدات!**` },
-    ]
-  },
-  '2': {
-    title: 'الشبكات وبروتوكولات TCP/IP', icon: '🌐', color: 'from-blue-600 to-blue-800',
-    lessons: [
-      { id: 1, title: 'مقدمة في الشبكات', duration: '10 دقائق', points: 10, content: `## مقدمة في الشبكات\n\nالشبكة هي مجموعة من الأجهزة المتصلة ببعضها لتبادل البيانات.\n\n### أنواع الشبكات\n- **LAN** — شبكة محلية (المنزل، المكتب)\n- **WAN** — شبكة واسعة (الإنترنت)\n- **MAN** — شبكة المدينة` },
-      { id: 2, title: 'بروتوكول TCP/IP', duration: '20 دقائق', points: 20, content: `## بروتوكول TCP/IP\n\nهو اللغة التي تتحدث بها الأجهزة على الإنترنت.\n\n### الطبقات الأربع\n1. **Application** — HTTP, DNS, FTP\n2. **Transport** — TCP, UDP\n3. **Internet** — IP\n4. **Network Access** — Ethernet, WiFi` },
-    ]
-  },
-  '3': { title: 'اختبار الاختراق', icon: '💻', color: 'from-purple-600 to-purple-800', lessons: [{ id: 1, title: 'مقدمة في Penetration Testing', duration: '15 دقائق', points: 15, content: `## اختبار الاختراق\n\nهو عملية محاكاة هجوم حقيقي على نظام بإذن رسمي.\n\n### المراحل الخمس\n1. **Reconnaissance** — جمع المعلومات\n2. **Scanning** — فحص الثغرات\n3. **Exploitation** — استغلال الثغرات\n4. **Post-Exploitation** — ماذا بعد؟\n5. **Reporting** — كتابة التقرير` }] },
-  '4': { title: 'تحليل البرمجيات الخبيثة', icon: '🦠', color: 'from-red-600 to-red-800', lessons: [{ id: 1, title: 'أنواع البرمجيات الخبيثة', duration: '12 دقائق', points: 12, content: `## أنواع البرمجيات الخبيثة\n\n### 1. Virus\nيلصق نفسه ببرامج أخرى وينتشر.\n\n### 2. Worm\nينتشر وحده عبر الشبكة.\n\n### 3. Trojan\nيتنكر كبرنامج شرعي.\n\n### 4. Ransomware\nيشفّر ملفاتك ويطلب فدية.` }] },
-  '5': { title: 'الهندسة الاجتماعية', icon: '🎭', color: 'from-yellow-600 to-yellow-800', lessons: [{ id: 1, title: 'ما هي الهندسة الاجتماعية؟', duration: '10 دقائق', points: 10, content: `## الهندسة الاجتماعية\n\nهي فن التلاعب بالبشر للحصول على معلومات سرية.\n\n### أشهر الأساليب\n- **Phishing** — إيميلات مزيفة\n- **Pretexting** — انتحال شخصية\n- **Baiting** — إغراء الضحية\n- **Tailgating** — الدخول خلف موظف` }] },
-  '6': { title: 'التشفير وعلم الكريبتو', icon: '🔐', color: 'from-pink-600 to-pink-800', lessons: [{ id: 1, title: 'مقدمة في التشفير', duration: '15 دقائق', points: 15, content: `## التشفير\n\nهو تحويل البيانات لصيغة غير مقروءة إلا بمفتاح خاص.\n\n### أنواع التشفير\n- **Symmetric** — مفتاح واحد للتشفير والفك (AES)\n- **Asymmetric** — مفتاح عام وخاص (RSA)\n- **Hashing** — تحويل أحادي الاتجاه (SHA-256)` }] },
-}
-
 export default function CoursePage() {
+  const [lessons, setLessons] = useState<any[]>([])
+  const [currentLesson, setCurrentLesson] = useState<any>(null)
+  const [completed, setCompleted] = useState<Set<string>>(new Set())
   const [user, setUser] = useState<any>(null)
-  const [activeLesson, setActiveLesson] = useState(0)
-  const [completed, setCompleted] = useState<number[]>([])
-  const [totalPoints, setTotalPoints] = useState(0)
-  const [saving, setSaving] = useState(false)
-  const [showPoints, setShowPoints] = useState(false)
-  const [earnedPoints, setEarnedPoints] = useState(0)
+  const [points, setPoints] = useState(0)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
   const params = useParams()
   const courseId = params.id as string
-  const course = coursesData[courseId]
+
+  const staticCourses: Record<string, { title: string; color: string; icon: string }> = {
+    '1': { title: 'أساسيات الأمن السيبراني', color: 'from-green-600 to-green-800', icon: '🛡️' },
+    '2': { title: 'الشبكات وبروتوكولات TCP/IP', color: 'from-blue-600 to-blue-800', icon: '🌐' },
+    '3': { title: 'اختبار الاختراق', color: 'from-purple-600 to-purple-800', icon: '💻' },
+    '4': { title: 'تحليل البرمجيات الخبيثة', color: 'from-red-600 to-red-800', icon: '🦠' },
+    '5': { title: 'الهندسة الاجتماعية', color: 'from-yellow-600 to-yellow-800', icon: '🎭' },
+    '6': { title: 'التشفير وعلم الكريبتو', color: 'from-pink-600 to-pink-800', icon: '🔐' },
+  }
+
+  const dbCourseIds: Record<string, string> = {
+    '1': '00000000-0000-0000-0000-000000000001',
+  }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) router.push('/')
-      else {
-        setUser(session.user)
-        loadProgress(session.user.id)
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) { router.push('/'); return }
+      setUser(session.user)
+
+      const dbCourseId = dbCourseIds[courseId]
+      if (dbCourseId) {
+        const { data: lessonsData } = await supabase
+          .from('lessons')
+          .select('*')
+          .eq('course_id', dbCourseId)
+          .order('order_num')
+        if (lessonsData && lessonsData.length > 0) {
+          setLessons(lessonsData)
+          setCurrentLesson(lessonsData[0])
+          const { data: comp } = await supabase
+            .from('lesson_completions')
+            .select('lesson_id')
+            .eq('user_id', session.user.id)
+          if (comp) setCompleted(new Set(comp.map((c: any) => c.lesson_id)))
+        }
+      } else {
+        setLessons([{ id: 'demo', title: 'قريباً...', content: '## المحتوى قيد الإعداد\n\nسيتوفر هذا المسار قريباً! 🚀' }])
+        setCurrentLesson({ id: 'demo', title: 'قريباً...', content: '## المحتوى قيد الإعداد\n\nسيتوفر هذا المسار قريباً! 🚀' })
       }
+
+      const { data: profile } = await supabase.from('profiles').select('points').eq('id', session.user.id).single()
+      if (profile) setPoints(profile.points)
+      setLoading(false)
     })
-  }, [])
+  }, [courseId])
 
-  const loadProgress = async (userId: string) => {
-    // تحميل الدروس المكتملة
-    const { data: completions } = await supabase
-      .from('lesson_completions')
-      .select('lesson_id')
-      .eq('user_id', userId)
-      .eq('course_id', parseInt(courseId))
-
-    if (completions) {
-      setCompleted(completions.map(c => c.lesson_id - 1))
-    }
-
-    // تحميل النقاط
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('points')
-      .eq('id', userId)
-      .single()
-
-    if (profile) setTotalPoints(profile.points)
+  const completeLesson = async () => {
+    if (!user || !currentLesson || completed.has(currentLesson.id)) return
+    await supabase.from('lesson_completions').upsert({ user_id: user.id, course_id: parseInt(courseId), lesson_id: currentLesson.id })
+    const newPoints = points + 15
+    await supabase.from('profiles').upsert({ id: user.id, points: newPoints })
+    setCompleted(new Set([...completed, currentLesson.id]))
+    setPoints(newPoints)
+    const idx = lessons.findIndex(l => l.id === currentLesson.id)
+    if (idx < lessons.length - 1) setCurrentLesson(lessons[idx + 1])
   }
 
-  const markComplete = async () => {
-    if (!user || completed.includes(activeLesson)) {
-      if (activeLesson < course.lessons.length - 1) setActiveLesson(activeLesson + 1)
-      return
-    }
-
-    setSaving(true)
-    const lesson = course.lessons[activeLesson]
-    const points = lesson.points || 10
-
-    // حفظ الدرس كمكتمل
-    await supabase.from('lesson_completions').upsert({
-      user_id: user.id,
-      course_id: parseInt(courseId),
-      lesson_id: lesson.id,
-    })
-
-    // تحديث أو إنشاء الملف الشخصي مع النقاط
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('points')
-      .eq('id', user.id)
-      .single()
-
-    if (profile) {
-      await supabase.from('profiles').update({ points: profile.points + points }).eq('id', user.id)
-      setTotalPoints(profile.points + points)
-    } else {
-      await supabase.from('profiles').insert({ id: user.id, points: points })
-      setTotalPoints(points)
-    }
-
-    setCompleted([...completed, activeLesson])
-    setEarnedPoints(points)
-    setShowPoints(true)
-    setTimeout(() => setShowPoints(false), 2000)
-    setSaving(false)
-
-    if (activeLesson < course.lessons.length - 1) {
-      setTimeout(() => setActiveLesson(activeLesson + 1), 500)
-    }
+  const renderContent = (content: string) => {
+    return content
+      .replace(/^## (.+)$/gm, '<h2 class="text-2xl font-bold text-green-400 mt-6 mb-3">$1</h2>')
+      .replace(/^### (.+)$/gm, '<h3 class="text-xl font-bold text-blue-400 mt-4 mb-2">$1</h3>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-bold">$1</strong>')
+      .replace(/^- (.+)$/gm, '<li class="ml-4 mb-1 text-gray-300">• $1</li>')
+      .replace(/^(\d+)\. (.+)$/gm, '<li class="ml-4 mb-1 text-gray-300">$1. $2</li>')
+      .replace(/^> (.+)$/gm, '<blockquote class="border-r-4 border-green-500 pr-4 my-3 text-gray-300 italic">$1</blockquote>')
+      .replace(/`(.+?)`/g, '<code class="bg-gray-700 px-2 py-0.5 rounded text-green-300 text-sm">$1</code>')
+      .replace(/\n\n/g, '<br/><br/>')
   }
 
-  if (!user || !course) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">جاري التحميل...</div>
+  if (loading) return <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white text-xl">جاري التحميل... ⏳</div>
 
-  const lesson = course.lessons[activeLesson]
+  const course = staticCourses[courseId] || { title: 'المسار', color: 'from-gray-600 to-gray-800', icon: '📚' }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white" dir="rtl">
-      {/* نقاط تظهر عند الإتمام */}
-      {showPoints && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-8 py-4 rounded-2xl text-2xl font-bold shadow-2xl animate-bounce">
-          +{earnedPoints} نقطة! 🎉
-        </div>
-      )}
-
-      {/* Navbar */}
       <nav className="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center">
-        <button onClick={() => router.push('/dashboard')} className="text-green-400 hover:text-green-300 flex items-center gap-2">
-          ← العودة للرئيسية
-        </button>
         <div className="flex items-center gap-3">
-          <span className="bg-yellow-500 text-black px-3 py-1 rounded-full text-sm font-bold">⭐ {totalPoints} نقطة</span>
-          <h1 className="text-xl font-bold text-green-400">🔐 CYBERعربي</h1>
+          <button onClick={() => router.push('/dashboard')} className="text-gray-400 hover:text-white">← العودة</button>
+          <span className="text-green-400 font-bold">{course.icon} {course.title}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-yellow-400 font-bold">⭐ {points} نقطة</span>
         </div>
       </nav>
 
-      <div className="flex h-[calc(100vh-65px)]">
+      <div className="flex h-[calc(100vh-64px)]">
         {/* Sidebar */}
-        <div className="w-80 bg-gray-800 border-l border-gray-700 overflow-y-auto">
-          <div className={`bg-gradient-to-r ${course.color} p-6`}>
-            <div className="text-4xl mb-2">{course.icon}</div>
-            <h2 className="text-xl font-bold">{course.title}</h2>
-            <p className="text-sm mt-2 opacity-80">{completed.length}/{course.lessons.length} درس مكتمل</p>
-            <div className="mt-3 bg-black bg-opacity-30 rounded-full h-2">
-              <div className="bg-white rounded-full h-2 transition-all" style={{ width: `${(completed.length / course.lessons.length) * 100}%` }}></div>
+        <div className="w-72 bg-gray-800 border-l border-gray-700 overflow-y-auto p-4">
+          <div className="mb-4">
+            <div className="flex justify-between text-sm text-gray-400 mb-2">
+              <span>التقدم</span>
+              <span>{completed.size}/{lessons.length}</span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2">
+              <div className="bg-green-500 h-2 rounded-full transition-all" style={{ width: `${lessons.length ? (completed.size / lessons.length) * 100 : 0}%` }}></div>
             </div>
           </div>
-          <div className="p-4">
-            <h3 className="text-gray-400 text-sm mb-3 font-bold">محتوى المسار</h3>
-            {course.lessons.map((l: any, i: number) => (
-              <button
-                key={l.id}
-                onClick={() => setActiveLesson(i)}
-                className={`w-full text-right p-3 rounded-lg mb-2 flex items-center gap-3 transition ${activeLesson === i ? 'bg-green-600' : 'hover:bg-gray-700'}`}
-              >
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${completed.includes(i) ? 'bg-green-400 text-black' : 'bg-gray-600'}`}>
-                  {completed.includes(i) ? '✓' : i + 1}
-                </span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{l.title}</p>
-                  <p className="text-xs text-gray-400">{l.duration} • +{l.points} نقطة</p>
-                </div>
+          <div className="space-y-2">
+            {lessons.map((lesson, i) => (
+              <button key={lesson.id} onClick={() => setCurrentLesson(lesson)}
+                className={`w-full text-right p-3 rounded-lg text-sm transition flex items-center gap-2
+                  ${currentLesson?.id === lesson.id ? 'bg-green-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}>
+                <span>{completed.has(lesson.id) ? '✅' : `${i + 1}`}</span>
+                <span>{lesson.title}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto p-8">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <p className="text-gray-400 text-sm">الدرس {activeLesson + 1} من {course.lessons.length}</p>
-                <h2 className="text-3xl font-bold mt-1">{lesson.title}</h2>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-8">
+          {currentLesson && (
+            <div className="max-w-3xl mx-auto">
+              <h1 className="text-3xl font-bold mb-6 text-white">{currentLesson.title}</h1>
+              <div className="prose prose-invert bg-gray-800 rounded-2xl p-8 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: renderContent(currentLesson.content) }} />
+              <div className="mt-8 flex justify-between items-center">
+                <div>
+                  {completed.has(currentLesson.id) ? (
+                    <span className="text-green-400 font-bold text-lg">✅ تم إتمام هذا الدرس</span>
+                  ) : (
+                    <button onClick={completeLesson}
+                      className="bg-green-600 hover:bg-green-700 px-8 py-3 rounded-xl font-bold text-lg transition">
+                      إتمام الدرس (+15 نقطة) →
+                    </button>
+                  )}
+                </div>
+                {completed.has(currentLesson.id) && lessons.findIndex(l => l.id === currentLesson.id) < lessons.length - 1 && (
+                  <button onClick={() => setCurrentLesson(lessons[lessons.findIndex(l => l.id === currentLesson.id) + 1])}
+                    className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl font-bold transition">
+                    الدرس التالي →
+                  </button>
+                )}
               </div>
-              <div className="flex items-center gap-3">
-                <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm">+{lesson.points} نقطة</span>
-                <span className="bg-gray-700 px-3 py-1 rounded-full text-sm">{lesson.duration}</span>
-              </div>
             </div>
-
-            {/* Content */}
-            <div className="bg-gray-800 rounded-2xl p-8">
-              {lesson.content.split('\n').map((line: string, i: number) => {
-                if (line.startsWith('## ')) return <h2 key={i} className="text-2xl font-bold text-green-400 mt-4 mb-3">{line.replace('## ', '')}</h2>
-                if (line.startsWith('### ')) return <h3 key={i} className="text-xl font-bold text-blue-400 mt-4 mb-2">{line.replace('### ', '')}</h3>
-                if (line.startsWith('- ')) return <li key={i} className="text-gray-300 ml-4 mb-1">{line.replace('- ', '').replace(/\*\*(.*?)\*\*/g, '$1')}</li>
-                if (line.startsWith('> ')) return <blockquote key={i} className="border-r-4 border-green-400 pr-4 my-3 text-yellow-300 font-bold">{line.replace('> ', '')}</blockquote>
-                if (line.match(/^\d\./)) return <p key={i} className="text-gray-300 mb-1 mr-4">{line}</p>
-                if (line.trim() === '') return <br key={i} />
-                return <p key={i} className="text-gray-300 mb-2">{line.replace(/\*\*(.*?)\*\*/g, '$1')}</p>
-              })}
-            </div>
-
-            {/* Navigation */}
-            <div className="flex justify-between items-center mt-8">
-              <button
-                onClick={() => activeLesson > 0 && setActiveLesson(activeLesson - 1)}
-                disabled={activeLesson === 0}
-                className="bg-gray-700 px-6 py-3 rounded-xl disabled:opacity-30 hover:bg-gray-600 transition text-white"
-              >← الدرس السابق</button>
-
-              <button
-                onClick={markComplete}
-                disabled={saving}
-                className={`px-8 py-3 rounded-xl font-bold transition flex items-center gap-2 text-white ${completed.includes(activeLesson) ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'}`}
-              >
-                {saving ? '⏳ جاري الحفظ...' : completed.includes(activeLesson) ? '✓ مكتمل' : `إتمام الدرس (+${lesson.points} نقطة)`}
-                {!completed.includes(activeLesson) && activeLesson < course.lessons.length - 1 ? ' ←' : ''}
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
