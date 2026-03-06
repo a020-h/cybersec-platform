@@ -236,6 +236,14 @@ ul, ol { padding:0; margin:0; }
         .opt-dim { opacity:0.4; }
         @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
         .lesson-content { animation:fadeIn 0.3s ease; }
+        @media (max-width: 768px) {
+          .sidebar-desktop { display: none !important; }
+          .lesson-main { padding: 24px 16px !important; }
+          .lesson-title { font-size: 22px !important; }
+          .nav-course-title { display: none !important; }
+          .quiz-box { padding: 24px 16px !important; }
+          .opt-btn { padding: 12px 14px !important; font-size: 14px !important; }
+        }
       `}</style>
 
       {/* Quiz Modal */}
@@ -324,7 +332,7 @@ ul, ol { padding:0; margin:0; }
               onMouseOut={e => (e.currentTarget.style.borderColor = '#1a3a50')}>
               ← العودة
             </button>
-            <span style={{ color: course.color, fontFamily: 'monospace', fontWeight: '700', fontSize: '15px' }}>{course.icon} {course.title}</span>
+            <span className="nav-course-title" style={{ color: course.color, fontFamily: 'monospace', fontWeight: '700', fontSize: '15px' }}>{course.icon} {course.title}</span>
           </div>
           <div style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '100px', padding: '6px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ color: '#ffd700' }}>⭐</span>
@@ -335,7 +343,7 @@ ul, ol { padding:0; margin:0; }
 
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {/* Sidebar */}
-          <div style={{ width: '280px', background: '#080f18', borderLeft: '1px solid #1a3a50', overflowY: 'auto', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+          <div className="sidebar-desktop" style={{ width: '280px', background: '#080f18', borderLeft: '1px solid #1a3a50', overflowY: 'auto', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '20px', borderBottom: '1px solid #1a3a50' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <span style={{ color: '#7090a8', fontSize: '13px', fontFamily: 'monospace' }}>التقدم</span>
@@ -368,7 +376,7 @@ ul, ol { padding:0; margin:0; }
           {/* Main Content */}
           <div style={{ flex: 1, overflowY: 'auto', background: '#050a0f' }}>
             {currentLesson && (
-              <div className="lesson-content" style={{ maxWidth: '820px', margin: '0 auto', padding: '48px 40px' }}>
+              <div className="lesson-content lesson-main" style={{ maxWidth: '820px', margin: '0 auto', padding: '48px 40px' }}>
                 <div style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid #1a3a50' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
                     <span style={{ fontFamily: 'monospace', color: '#1a3a50', fontSize: '13px' }}>
@@ -378,7 +386,7 @@ ul, ol { padding:0; margin:0; }
                       <span style={{ background: 'rgba(0,255,136,0.1)', border: '1px solid #00ff8866', color: '#00ff88', padding: '2px 10px', borderRadius: '100px', fontSize: '12px', fontFamily: 'monospace' }}>✓ مكتمل</span>
                     )}
                   </div>
-                  <h1 style={{ fontSize: '32px', fontWeight: '900', color: 'white', lineHeight: '1.3' }}>{currentLesson.title}</h1>
+                  <h1 className="lesson-title" style={{ fontSize: '32px', fontWeight: '900', color: 'white', lineHeight: '1.3' }}>{currentLesson.title}</h1>
                 </div>
 
                 <div style={{ lineHeight: '2', color: '#a0c0d8', fontSize: '16px' }}
