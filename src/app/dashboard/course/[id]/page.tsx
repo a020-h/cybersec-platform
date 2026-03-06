@@ -127,7 +127,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
     await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/lesson_completions`, {
       method: 'POST',
       headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${sessionToken}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
-      body: JSON.stringify({ user_id: user.id, course_id: parseInt(courseId), lesson_id: currentLesson.id })
+      body: JSON.stringify({ user_id: user.id, course_id: courseId, lesson_id: currentLesson.id })
     })
 
     const newPoints = points + 15 + bonus
