@@ -13,10 +13,10 @@ const courses = [
 ]
 
 const getLevel = (points: number) => {
-  if (points >= 300) return { label: 'خبير', color: '#ffd700', icon: '👑', rank: 4 }
-  if (points >= 150) return { label: 'متقدم', color: '#a855f7', icon: '⚡', rank: 3 }
-  if (points >= 50)  return { label: 'متوسط', color: '#00d4ff', icon: '🔥', rank: 2 }
-  return { label: 'مبتدئ', color: '#00ff88', icon: '🌱', rank: 1 }
+  if (points >= 300) return { label: 'خبير', color: '#ffd700', icon: '👑', rank: 4, next: undefined, nextPts: undefined }
+  if (points >= 150) return { label: 'متقدم', color: '#a855f7', icon: '⚡', rank: 3, next: 'خبير', nextPts: 300 }
+  if (points >= 50)  return { label: 'متوسط', color: '#00d4ff', icon: '🔥', rank: 2, next: 'متقدم', nextPts: 150 }
+  return { label: 'مبتدئ', color: '#00ff88', icon: '🌱', rank: 1, next: 'متوسط', nextPts: 50 }
 }
 
 const avatars = ['🧑‍💻', '👨‍💻', '👩‍💻', '🕵️', '🦾', '🤖', '👾', '🎯']
