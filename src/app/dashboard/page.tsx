@@ -4,12 +4,12 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
 const courses = [
-  { id: 1, title: 'أساسيات الأمن السيبراني', level: 'مبتدئ', icon: '🛡️', lessons: 3, color: '#00ff88', bg: 'linear-gradient(135deg,#0a2010,#051508)' },
-  { id: 2, title: 'الشبكات وبروتوكولات TCP/IP', level: 'مبتدئ', icon: '🌐', lessons: 2, color: '#00d4ff', bg: 'linear-gradient(135deg,#0a1020,#050a18)' },
+  { id: 1, title: 'أساسيات الأمن السيبراني', level: 'مبتدئ', icon: '🛡️', lessons: 5, color: '#00ff88', bg: 'linear-gradient(135deg,#0a2010,#051508)' },
+  { id: 2, title: 'الشبكات وبروتوكولات TCP/IP', level: 'مبتدئ', icon: '🌐', lessons: 5, color: '#00d4ff', bg: 'linear-gradient(135deg,#0a1020,#050a18)' },
   { id: 3, title: 'اختبار الاختراق', level: 'متوسط', icon: '💻', lessons: 5, color: '#a855f7', bg: 'linear-gradient(135deg,#150a20,#0d0518)' },
-  { id: 4, title: 'تحليل البرمجيات الخبيثة', level: 'متقدم', icon: '🦠', lessons: 1, color: '#ff3366', bg: 'linear-gradient(135deg,#200a0a,#180505)' },
-  { id: 5, title: 'الهندسة الاجتماعية', level: 'متوسط', icon: '🎭', lessons: 1, color: '#ffd700', bg: 'linear-gradient(135deg,#1a1000,#120a00)' },
-  { id: 6, title: 'التشفير وعلم الكريبتو', level: 'متقدم', icon: '🔐', lessons: 1, color: '#ff6ec7', bg: 'linear-gradient(135deg,#200a18,#180510)' },
+  { id: 4, title: 'تحليل البرمجيات الخبيثة', level: 'متقدم', icon: '🦠', lessons: 4, color: '#ff3366', bg: 'linear-gradient(135deg,#200a0a,#180505)' },
+  { id: 5, title: 'الهندسة الاجتماعية', level: 'متوسط', icon: '🎭', lessons: 3, color: '#ffd700', bg: 'linear-gradient(135deg,#1a1000,#120a00)' },
+  { id: 6, title: 'التشفير وعلم الكريبتو', level: 'متقدم', icon: '🔐', lessons: 3, color: '#ff6ec7', bg: 'linear-gradient(135deg,#200a18,#180510)' },
 ]
 
 const getLevel = (points: number) => {
