@@ -27,6 +27,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   const [currentLesson, setCurrentLesson] = useState<any>(null)
   const [completed, setCompleted] = useState<Set<string>>(new Set())
   const [user, setUser] = useState<any>(null)
+  const [username, setUsername] = useState('')
   const [points, setPoints] = useState(0)
   const [loading, setLoading] = useState(true)
   const [showQuiz, setShowQuiz] = useState(false)
@@ -37,6 +38,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   const [quizScore, setQuizScore] = useState(0)
   const [quizDone, setQuizDone] = useState(false)
   const [sessionToken, setSessionToken] = useState('')
+  const [certLoading, setCertLoading] = useState(false)
   const router = useRouter()
   const course = staticCourses[courseId] || { title: 'المسار', icon: '📚', color: '#00ff88' }
 
@@ -68,11 +70,14 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
       }
 
       const profileRes = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${session.user.id}&select=points`,
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${session.user.id}&select=points,username`,
         { headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${session.access_token}` } }
       )
       const profileData = await profileRes.json()
-      if (profileData?.[0]) setPoints(profileData[0].points)
+      if (profileData?.[0]) {
+        setPoints(profileData[0].points)
+        setUsername(profileData[0].username || 'المتعلم')
+      }
 
       const compRes = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/lesson_completions?user_id=eq.${session.user.id}&select=lesson_id`,
@@ -84,6 +89,134 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
     }
     init()
   }, [])
+
+  const generateCertificate = async () => {
+    setCertLoading(true)
+    try {
+      const { jsPDF } = await import('jspdf')
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+      const W = 297, H = 210
+
+      // Background
+      doc.setFillColor(5, 10, 15)
+      doc.rect(0, 0, W, H, 'F')
+
+      // Border outer
+      doc.setDrawColor(26, 58, 80)
+      doc.setLineWidth(1)
+      doc.rect(8, 8, W - 16, H - 16)
+
+      // Border inner accent
+      const colorHex = course.color.replace('#', '')
+      const r = parseInt(colorHex.slice(0, 2), 16)
+      const g = parseInt(colorHex.slice(2, 4), 16)
+      const b = parseInt(colorHex.slice(4, 6), 16)
+      doc.setDrawColor(r, g, b)
+      doc.setLineWidth(0.5)
+      doc.rect(12, 12, W - 24, H - 24)
+
+      // Corner decorations
+      const corners = [[14, 14], [W - 14, 14], [14, H - 14], [W - 14, H - 14]]
+      corners.forEach(([cx, cy]) => {
+        doc.setFillColor(r, g, b)
+        doc.circle(cx, cy, 2, 'F')
+      })
+
+      // Top accent line
+      doc.setDrawColor(r, g, b)
+      doc.setLineWidth(2)
+      doc.line(40, 30, W - 40, 30)
+
+      // Platform name
+      doc.setTextColor(r, g, b)
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.text('CYBER', W / 2 - 12, 24, { align: 'center' })
+      doc.setTextColor(112, 144, 168)
+      doc.text('عربي', W / 2 + 8, 24, { align: 'center' })
+
+      // Certificate title
+      doc.setTextColor(224, 240, 255)
+      doc.setFontSize(28)
+      doc.setFont('helvetica', 'bold')
+      doc.text('CERTIFICATE OF COMPLETION', W / 2, 50, { align: 'center' })
+
+      doc.setTextColor(112, 144, 168)
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'normal')
+      doc.text('شهادة إتمام مسار', W / 2, 60, { align: 'center' })
+
+      // Divider
+      doc.setDrawColor(26, 58, 80)
+      doc.setLineWidth(0.5)
+      doc.line(60, 67, W - 60, 67)
+
+      // "This is to certify that"
+      doc.setTextColor(112, 144, 168)
+      doc.setFontSize(12)
+      doc.text('This is to certify that', W / 2, 80, { align: 'center' })
+
+      // Username
+      doc.setTextColor(r, g, b)
+      doc.setFontSize(32)
+      doc.setFont('helvetica', 'bold')
+      doc.text(username, W / 2, 100, { align: 'center' })
+
+      // Underline username
+      const nameWidth = doc.getTextWidth(username)
+      doc.setDrawColor(r, g, b)
+      doc.setLineWidth(0.8)
+      doc.line(W / 2 - nameWidth / 2, 103, W / 2 + nameWidth / 2, 103)
+
+      // "has successfully completed"
+      doc.setTextColor(112, 144, 168)
+      doc.setFontSize(12)
+      doc.setFont('helvetica', 'normal')
+      doc.text('has successfully completed the course', W / 2, 116, { align: 'center' })
+
+      // Course name box
+      doc.setFillColor(15, 31, 48)
+      doc.setDrawColor(r, g, b)
+      doc.setLineWidth(0.5)
+      doc.roundedRect(W / 2 - 70, 122, 140, 18, 4, 4, 'FD')
+      doc.setTextColor(224, 240, 255)
+      doc.setFontSize(14)
+      doc.setFont('helvetica', 'bold')
+      doc.text(`${course.icon} ${course.title}`, W / 2, 133, { align: 'center' })
+
+      // Bottom divider
+      doc.setDrawColor(26, 58, 80)
+      doc.setLineWidth(0.5)
+      doc.line(60, 152, W - 60, 152)
+
+      // Date
+      const today = new Date()
+      const dateStr = today.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })
+      doc.setTextColor(112, 144, 168)
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`تاريخ الإصدار: ${dateStr}`, W / 2, 162, { align: 'center' })
+
+      // Seal / badge
+      doc.setFillColor(r, g, b)
+      doc.circle(W / 2, 182, 10, 'F')
+      doc.setTextColor(5, 10, 15)
+      doc.setFontSize(14)
+      doc.text('✓', W / 2, 186, { align: 'center' })
+
+      doc.setTextColor(r, g, b)
+      doc.setFontSize(8)
+      doc.text('CYBERعربي Verified', W / 2, 197, { align: 'center' })
+
+      // Save
+      const fileName = `certificate-${course.title.replace(/\s+/g, '-')}-${username}.pdf`
+      doc.save(fileName)
+    } catch (err) {
+      console.error('Certificate error:', err)
+      alert('حدث خطأ في توليد الشهادة')
+    }
+    setCertLoading(false)
+  }
 
   const startQuiz = async () => {
     if (!currentLesson || currentLesson.id === 'demo') return
@@ -114,32 +247,24 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
     setShowQuiz(false)
     if (completed.has(currentLesson.id)) return
 
-    // ✅ تحقق من قاعدة البيانات لمنع التكرار
     const checkRes = await fetch(
       `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/lesson_completions?user_id=eq.${user.id}&lesson_id=eq.${currentLesson.id}&select=id`,
       { headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${sessionToken}` } }
     )
     const existing = await checkRes.json()
     if (existing?.length > 0) {
-      // الدرس مكتمل مسبقاً — فقط حدّث الـ state المحلي
       setCompleted(new Set([...completed, currentLesson.id]))
       return
     }
 
     const bonus = quizScore === questions.length ? 25 : quizScore > 0 ? 10 : 0
 
-    // أضف إكمال الدرس
     await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/lesson_completions`, {
       method: 'POST',
-      headers: {
-        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        'Authorization': `Bearer ${sessionToken}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${sessionToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: user.id, course_id: courseId, lesson_id: currentLesson.id })
     })
 
-    // ✅ اقرأ النقاط الحالية من DB أولاً ثم أضف عليها
     const freshProfile = await fetch(
       `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=points`,
       { headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${sessionToken}` } }
@@ -148,14 +273,9 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
     const freshPoints = freshData?.[0]?.points || 0
     const newPoints = freshPoints + 15 + bonus
 
-    // ✅ استخدم PATCH بدل POST لتحديث النقاط
     await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
       method: 'PATCH',
-      headers: {
-        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        'Authorization': `Bearer ${sessionToken}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${sessionToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ points: newPoints })
     })
 
@@ -177,17 +297,10 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
       const bodyRows = tableRows.slice(2)
       html += `<div style="overflow-x:auto;margin:24px 0;border-radius:8px;border:1px solid #1a3a50">`
       html += `<table style="width:100%;border-collapse:collapse;font-size:14px;direction:rtl">`
-      html += `<thead><tr>${header.map(h =>
-        `<th style="padding:12px 16px;background:#0f1f30;color:${course.color};font-family:monospace;font-weight:700;text-align:right;border-bottom:2px solid #1a3a50;white-space:nowrap">${h.trim()}</th>`
-      ).join('')}</tr></thead>`
-      html += `<tbody>${bodyRows.map((row, i) =>
-        `<tr style="background:${i % 2 === 0 ? 'transparent' : '#0a152088'}">${row.map(cell =>
-          `<td style="padding:10px 16px;color:#a0c0d8;border-bottom:1px solid #1a3a5044;text-align:right">${cell.trim()}</td>`
-        ).join('')}</tr>`
-      ).join('')}</tbody>`
+      html += `<thead><tr>${header.map(h => `<th style="padding:12px 16px;background:#0f1f30;color:${course.color};font-family:monospace;font-weight:700;text-align:right;border-bottom:2px solid #1a3a50;white-space:nowrap">${h.trim()}</th>`).join('')}</tr></thead>`
+      html += `<tbody>${bodyRows.map((row, i) => `<tr style="background:${i % 2 === 0 ? 'transparent' : '#0a152088'}">${row.map(cell => `<td style="padding:10px 16px;color:#a0c0d8;border-bottom:1px solid #1a3a5044;text-align:right">${cell.trim()}</td>`).join('')}</tr>`).join('')}</tbody>`
       html += `</table></div>`
-      tableRows = []
-      inTable = false
+      tableRows = []; inTable = false
     }
 
     const applyInline = (text: string): string => text
@@ -198,8 +311,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
       const trimmed = line.trim()
       if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
         inTable = true
-        const cells = trimmed.slice(1, -1).split('|')
-        tableRows.push(cells)
+        tableRows.push(trimmed.slice(1, -1).split('|'))
         continue
       }
       if (inTable) flushTable()
@@ -208,17 +320,11 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
       } else if (trimmed.startsWith('### ')) {
         html += `<h3 style="font-size:17px;font-weight:700;color:#00d4ff;margin:22px 0 10px">${applyInline(trimmed.slice(4))}</h3>`
       } else if (trimmed.startsWith('- ')) {
-        html += `<div style="display:flex;align-items:flex-start;gap:10px;margin:8px 0;padding-right:4px">
-          <span style="color:${course.color};font-size:11px;margin-top:6px;flex-shrink:0">▸</span>
-          <span style="color:#a0c0d8;line-height:1.75">${applyInline(trimmed.slice(2))}</span>
-        </div>`
+        html += `<div style="display:flex;align-items:flex-start;gap:10px;margin:8px 0;padding-right:4px"><span style="color:${course.color};font-size:11px;margin-top:6px;flex-shrink:0">◆</span><span style="color:#a0c0d8;line-height:1.75">${applyInline(trimmed.slice(2))}</span></div>`
       } else if (/^\d+\.\s/.test(trimmed)) {
         const num = trimmed.match(/^(\d+)\./)?.[1]
         const text = trimmed.replace(/^\d+\.\s/, '')
-        html += `<div style="display:flex;align-items:flex-start;gap:12px;margin:8px 0;padding-right:4px">
-          <span style="color:${course.color};font-family:monospace;font-weight:700;flex-shrink:0;min-width:20px">${num}.</span>
-          <span style="color:#a0c0d8;line-height:1.75">${applyInline(text)}</span>
-        </div>`
+        html += `<div style="display:flex;align-items:flex-start;gap:12px;margin:8px 0;padding-right:4px"><span style="color:${course.color};font-family:monospace;font-weight:700;flex-shrink:0;min-width:20px">${num}.</span><span style="color:#a0c0d8;line-height:1.75">${applyInline(text)}</span></div>`
       } else if (trimmed.startsWith('> ')) {
         html += `<blockquote style="border-right:3px solid ${course.color};padding:12px 18px;margin:18px 0;background:#0a152088;border-radius:0 8px 8px 0;color:#a0c0d8;font-style:italic;line-height:1.7">${applyInline(trimmed.slice(2))}</blockquote>`
       } else if (trimmed === '') {
@@ -242,6 +348,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   const totalLessons = lessons.length
   const doneCount = lessons.filter(l => completed.has(l.id)).length
   const percent = totalLessons ? Math.round((doneCount / totalLessons) * 100) : 0
+  const courseCompleted = doneCount === totalLessons && totalLessons > 0 && lessons[0]?.id !== 'demo'
 
   return (
     <>
@@ -262,7 +369,9 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
         .opt-dim { opacity:0.4; }
         @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
         @keyframes spin { to{transform:rotate(360deg)} }
+        @keyframes certPulse { 0%,100%{box-shadow:0 0 20px ${course.color}44} 50%{box-shadow:0 0 40px ${course.color}88} }
         .lesson-content { animation:fadeIn 0.3s ease; }
+        .cert-btn { animation:certPulse 2s ease-in-out infinite; }
         @media (max-width: 768px) {
           .sidebar-desktop { display: none !important; }
           .lesson-main { padding: 24px 16px !important; }
@@ -308,7 +417,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                   <div style={{ marginTop: '16px' }}>
                     <div style={{ padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', background: selected === questions[currentQ].correct_answer ? 'rgba(0,255,136,0.08)' : 'rgba(255,51,102,0.08)', border: `1px solid ${selected === questions[currentQ].correct_answer ? '#00ff88' : '#ff3366'}` }}>
                       <p style={{ color: selected === questions[currentQ].correct_answer ? '#00ff88' : '#ff3366', fontWeight: '700', marginBottom: '6px' }}>
-                        {selected === questions[currentQ].correct_answer ? '✓ إجابة صحيحة!' : '✗ إجابة خاطئة'}
+                        {selected === questions[currentQ].correct_answer ? '✔ إجابة صحيحة!' : '✘ إجابة خاطئة'}
                       </p>
                       {questions[currentQ].explanation && (
                         <p style={{ color: '#7090a8', fontSize: '14px', lineHeight: '1.6' }}>{questions[currentQ].explanation}</p>
@@ -323,13 +432,13 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
             ) : (
               <div style={{ textAlign: 'center' }} dir="rtl">
                 <div style={{ fontSize: '64px', marginBottom: '16px' }}>
-                  {quizScore === questions.length ? '🏆' : quizScore >= questions.length / 2 ? '👍' : '📚'}
+                  {quizScore === questions.length ? '🏆' : quizScore >= questions.length / 2 ? '🎯' : '📚'}
                 </div>
                 <h2 style={{ fontSize: '28px', fontWeight: '900', marginBottom: '8px' }}>
                   نتيجتك: <span style={{ color: course.color }}>{quizScore}/{questions.length}</span>
                 </h2>
                 <p style={{ color: '#7090a8', marginBottom: '28px' }}>
-                  {quizScore === questions.length ? 'ممتاز! إجابات كاملة 🌟' : quizScore >= questions.length / 2 ? 'جيد! راجع الإجابات الخاطئة' : 'راجع الدرس وحاول مرة ثانية'}
+                  {quizScore === questions.length ? 'ممتاز! إجابات كاملة 🎉' : quizScore >= questions.length / 2 ? 'جيد! راجع الإجابات الخاطئة' : 'راجع الدرس وحاول مرة ثانية'}
                 </p>
                 <div style={{ background: '#0f1f30', border: '1px solid #1a3a50', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
                   <p style={{ color: course.color, fontWeight: '900', fontSize: '24px', fontFamily: 'monospace' }}>
@@ -340,7 +449,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                   </p>
                 </div>
                 <button onClick={finishQuiz} style={{ width: '100%', padding: '16px', background: course.color, color: '#050a0f', border: 'none', borderRadius: '8px', fontFamily: 'Cairo,sans-serif', fontSize: '16px', fontWeight: '900', cursor: 'pointer' }}>
-                  احفظ النتيجة وتابع →
+                  احفظ النتيجة وتابع ←
                 </button>
               </div>
             )}
@@ -388,16 +497,43 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                     onMouseOver={e => { if (!isCurrent) e.currentTarget.style.borderColor = course.color + '44' }}
                     onMouseOut={e => { if (!isCurrent) e.currentTarget.style.borderColor = '#1a3a50' }}>
                     <span style={{ fontFamily: 'monospace', fontSize: '12px', color: isDone ? '#00ff88' : isCurrent ? course.color : '#1a3a50', minWidth: '20px' }}>
-                      {isDone ? '✓' : String(i + 1).padStart(2, '0')}
+                      {isDone ? '✔' : String(i + 1).padStart(2, '0')}
                     </span>
                     <span style={{ flex: 1, textAlign: 'right' }}>{lesson.title}</span>
                   </button>
                 )
               })}
             </div>
+
+            {/* Certificate button in sidebar */}
+            {courseCompleted && (
+              <div style={{ padding: '16px', borderTop: '1px solid #1a3a50' }}>
+                <button className="cert-btn" onClick={generateCertificate} disabled={certLoading}
+                  style={{ width: '100%', padding: '14px', background: `linear-gradient(135deg, ${course.color}22, ${course.color}11)`, border: `1px solid ${course.color}`, borderRadius: '10px', color: course.color, fontFamily: 'Cairo,sans-serif', fontSize: '14px', fontWeight: '900', cursor: certLoading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  {certLoading ? '⏳ جاري التوليد...' : '🏅 تحميل الشهادة'}
+                </button>
+              </div>
+            )}
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', background: '#050a0f' }}>
+            {/* Course completion banner */}
+            {courseCompleted && (
+              <div style={{ background: `linear-gradient(135deg, ${course.color}15, ${course.color}05)`, borderBottom: `1px solid ${course.color}44`, padding: '20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <span style={{ fontSize: '36px' }}>🏆</span>
+                  <div>
+                    <p style={{ color: course.color, fontWeight: '900', fontSize: '18px' }}>أتممت المسار بنجاح!</p>
+                    <p style={{ color: '#7090a8', fontSize: '13px', marginTop: '4px' }}>يمكنك الآن تحميل شهادة الإتمام الخاصة بك</p>
+                  </div>
+                </div>
+                <button className="cert-btn" onClick={generateCertificate} disabled={certLoading}
+                  style={{ padding: '14px 28px', background: course.color, color: '#050a0f', border: 'none', borderRadius: '10px', fontFamily: 'Cairo,sans-serif', fontSize: '15px', fontWeight: '900', cursor: certLoading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '10px', whiteSpace: 'nowrap' }}>
+                  {certLoading ? '⏳ جاري التوليد...' : '📜 تحميل الشهادة PDF'}
+                </button>
+              </div>
+            )}
+
             {currentLesson && (
               <div className="lesson-content lesson-main" style={{ maxWidth: '820px', margin: '0 auto', padding: '48px 40px' }}>
                 <div style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid #1a3a50' }}>
@@ -406,7 +542,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                       {String(lessons.findIndex(l => l.id === currentLesson.id) + 1).padStart(2, '0')} / {String(totalLessons).padStart(2, '0')}
                     </span>
                     {completed.has(currentLesson.id) && (
-                      <span style={{ background: 'rgba(0,255,136,0.1)', border: '1px solid #00ff8866', color: '#00ff88', padding: '2px 10px', borderRadius: '100px', fontSize: '12px', fontFamily: 'monospace' }}>✓ مكتمل</span>
+                      <span style={{ background: 'rgba(0,255,136,0.1)', border: '1px solid #00ff8866', color: '#00ff88', padding: '2px 10px', borderRadius: '100px', fontSize: '12px', fontFamily: 'monospace' }}>✔ مكتمل</span>
                     )}
                   </div>
                   <h1 className="lesson-title" style={{ fontSize: '32px', fontWeight: '900', color: 'white', lineHeight: '1.3' }}>{currentLesson.title}</h1>
@@ -417,7 +553,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
 
                 <div style={{ marginTop: '48px', paddingTop: '32px', borderTop: '1px solid #1a3a50', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   {completed.has(currentLesson.id) ? (
-                    <span style={{ color: '#00ff88', fontWeight: '700', fontFamily: 'monospace' }}>✓ تم إتمام هذا الدرس</span>
+                    <span style={{ color: '#00ff88', fontWeight: '700', fontFamily: 'monospace' }}>✔ تم إتمام هذا الدرس</span>
                   ) : (
                     <button onClick={startQuiz}
                       style={{ background: course.color, color: '#050a0f', padding: '14px 32px', border: 'none', borderRadius: '8px', fontFamily: 'Cairo,sans-serif', fontSize: '16px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: `0 0 24px ${course.color}44` }}>
