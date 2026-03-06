@@ -204,9 +204,12 @@ export default function Dashboard() {
               <span style={{ fontFamily: 'monospace', fontWeight: '700', color: 'white' }}>{points}</span>
               <span style={{ color: '#7090a8', fontSize: '13px' }}>نقطة</span>
             </div>
-            <div style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '100px', padding: '6px 14px', fontSize: '13px', color: '#7090a8' }}>
-              {username}
-            </div>
+            <button onClick={() => router.push('/dashboard/profile')}
+  style={{ background: '#0a1520', border: '1px solid #1a3a50', color: '#7090a8', padding: '6px 16px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}
+  onMouseEnter={e => { e.currentTarget.style.borderColor = '#00ff8866'; e.currentTarget.style.color = '#00ff88' }}
+  onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a3a50'; e.currentTarget.style.color = '#7090a8' }}>
+  👤 {username}
+</button>
 <button onClick={() => router.push('/dashboard/profile')}
   style={{ background: '#0a1520', border: '1px solid #1a3a50', color: '#7090a8', padding: '6px 16px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}
   onMouseEnter={e => { e.currentTarget.style.borderColor = '#00ff8866'; e.currentTarget.style.color = '#00ff88' }}
