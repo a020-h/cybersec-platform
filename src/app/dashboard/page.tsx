@@ -73,122 +73,28 @@ export default function Dashboard() {
         ::-webkit-scrollbar { width:6px; }
         ::-webkit-scrollbar-track { background:#0a1520; }
         ::-webkit-scrollbar-thumb { background:#1a3a50; border-radius:3px; }
-
         @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
         @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
         @keyframes spin { to{transform:rotate(360deg)} }
-        @keyframes shimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
-        @keyframes borderGlow { 0%,100%{box-shadow:0 0 8px #00ff8833} 50%{box-shadow:0 0 24px #00ff8866} }
-
         .fade-up { animation:fadeUp 0.5s cubic-bezier(0.4,0,0.2,1) both; }
-
-        /* Stat Cards */
-        .stat-card {
-          transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-          cursor: default;
-        }
-        .stat-card:hover {
-          transform: translateY(-4px) scale(1.02);
-          border-color: #00ff8855 !important;
-          box-shadow: 0 12px 32px rgba(0,255,136,0.1);
-        }
-
-        /* Course Cards */
-        .course-card {
-          transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
-          cursor: pointer;
-          position: relative;
-        }
-        .course-card::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          border-radius: 16px;
-          opacity: 0;
-          transition: opacity 0.3s;
-          pointer-events: none;
-        }
-        .course-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 24px 48px rgba(0,0,0,0.5);
-        }
-        .course-card:active {
-          transform: translateY(-4px);
-        }
-
-        /* Course Button */
-        .course-btn {
-          transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
-          cursor: pointer;
-        }
-        .course-btn:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-        }
-        .course-btn:active {
-          transform: scale(0.97);
-        }
-
-        /* Nav Buttons */
-        .logout-btn {
-          transition: all 0.2s;
-        }
-        .logout-btn:hover {
-          background: rgba(255,51,102,0.25) !important;
-          box-shadow: 0 0 16px rgba(255,51,102,0.2);
-          transform: translateY(-1px);
-        }
-
-        /* Tab Buttons */
-        .tab-btn {
-          transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
-        }
-        .tab-btn:hover:not(.tab-active) {
-          color: #00ff88 !important;
-          background: rgba(0,255,136,0.08) !important;
-        }
-
-        /* Badge Cards */
-        .badge-card {
-          transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-          cursor: default;
-        }
-        .badge-card.unlocked:hover {
-          transform: translateY(-4px) scale(1.04);
-          box-shadow: 0 8px 24px rgba(0,255,136,0.15);
-          border-color: #00ff8888 !important;
-        }
-
-        /* Progress Rows */
-        .progress-row {
-          transition: all 0.2s;
-          border-radius: 8px;
-          padding: 8px;
-          margin: -8px;
-          margin-bottom: 12px;
-        }
-        .progress-row:hover {
-          background: rgba(255,255,255,0.03);
-        }
-
-        /* Back button */
-        .back-btn {
-          transition: all 0.2s;
-        }
-        .back-btn:hover {
-          border-color: #00ff88 !important;
-          color: #00ff88 !important;
-          box-shadow: 0 0 12px rgba(0,255,136,0.15);
-        }
-
-        /* Level card glow */
-        .level-card {
-          transition: all 0.3s;
-        }
-        .level-card:hover {
-          box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-          transform: translateY(-2px);
-        }
+        .stat-card { transition: all 0.3s cubic-bezier(0.4,0,0.2,1); cursor: default; }
+        .stat-card:hover { transform: translateY(-4px) scale(1.02); border-color: #00ff8855 !important; box-shadow: 0 12px 32px rgba(0,255,136,0.1); }
+        .course-card { transition: all 0.35s cubic-bezier(0.4,0,0.2,1); cursor: pointer; position: relative; }
+        .course-card:hover { transform: translateY(-8px); box-shadow: 0 24px 48px rgba(0,0,0,0.5); }
+        .course-card:active { transform: translateY(-4px); }
+        .course-btn { transition: all 0.25s cubic-bezier(0.4,0,0.2,1); cursor: pointer; }
+        .course-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+        .course-btn:active { transform: scale(0.97); }
+        .logout-btn { transition: all 0.2s; }
+        .logout-btn:hover { background: rgba(255,51,102,0.25) !important; box-shadow: 0 0 16px rgba(255,51,102,0.2); transform: translateY(-1px); }
+        .tab-btn { transition: all 0.25s cubic-bezier(0.4,0,0.2,1); }
+        .tab-btn:hover:not(.tab-active) { color: #00ff88 !important; background: rgba(0,255,136,0.08) !important; }
+        .badge-card { transition: all 0.3s cubic-bezier(0.4,0,0.2,1); cursor: default; }
+        .badge-card.unlocked:hover { transform: translateY(-4px) scale(1.04); box-shadow: 0 8px 24px rgba(0,255,136,0.15); border-color: #00ff8888 !important; }
+        .progress-row { transition: all 0.2s; border-radius: 8px; padding: 8px; margin: -8px; margin-bottom: 12px; }
+        .progress-row:hover { background: rgba(255,255,255,0.03); }
+        .level-card { transition: all 0.3s; }
+        .level-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.3); transform: translateY(-2px); }
       `}</style>
 
       <div style={{ minHeight: '100vh', position: 'relative', zIndex: 1 }} dir="rtl">
@@ -199,23 +105,17 @@ export default function Dashboard() {
             🔐 CYBER<span style={{ color: '#7090a8' }}>عربي</span>
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '100px', padding: '6px 16px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
+            <div style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '100px', padding: '6px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ color: '#ffd700' }}>⭐</span>
               <span style={{ fontFamily: 'monospace', fontWeight: '700', color: 'white' }}>{points}</span>
               <span style={{ color: '#7090a8', fontSize: '13px' }}>نقطة</span>
             </div>
             <button onClick={() => router.push('/dashboard/profile')}
-  style={{ background: '#0a1520', border: '1px solid #1a3a50', color: '#7090a8', padding: '6px 16px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}
-  onMouseEnter={e => { e.currentTarget.style.borderColor = '#00ff8866'; e.currentTarget.style.color = '#00ff88' }}
-  onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a3a50'; e.currentTarget.style.color = '#7090a8' }}>
-  👤 {username}
-</button>
-<button onClick={() => router.push('/dashboard/profile')}
-  style={{ background: '#0a1520', border: '1px solid #1a3a50', color: '#7090a8', padding: '6px 16px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}
-  onMouseEnter={e => { e.currentTarget.style.borderColor = '#00ff8866'; e.currentTarget.style.color = '#00ff88' }}
-  onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a3a50'; e.currentTarget.style.color = '#7090a8' }}>
-  👤 ملفي
-</button>
+              style={{ background: '#0a1520', border: '1px solid #1a3a50', color: '#7090a8', padding: '6px 16px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#00ff8866'; e.currentTarget.style.color = '#00ff88' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a3a50'; e.currentTarget.style.color = '#7090a8' }}>
+              👤 {username}
+            </button>
             <button className="logout-btn" onClick={() => supabase.auth.signOut().then(() => router.push('/'))}
               style={{ background: 'rgba(255,51,102,0.1)', border: '1px solid rgba(255,51,102,0.3)', color: '#ff3366', padding: '6px 16px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer' }}>
               خروج
@@ -227,8 +127,6 @@ export default function Dashboard() {
         <div style={{ background: 'linear-gradient(135deg,#080f18,#050a0f)', borderBottom: '1px solid #1a3a50', padding: '40px 40px 32px' }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '24px' }}>
-
-              {/* Welcome */}
               <div className="fade-up">
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '100px', padding: '4px 14px', marginBottom: '14px' }}>
                   <span style={{ animation: 'pulse 2s infinite', color: '#00ff88', fontSize: '10px' }}>●</span>
@@ -242,7 +140,6 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              {/* Level Card */}
               <div className="fade-up level-card" style={{ background: '#0a1520', border: `1px solid ${level.color}33`, borderRadius: '16px', padding: '20px 28px', minWidth: '260px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <span style={{ color: '#7090a8', fontSize: '13px', fontFamily: 'monospace' }}>المستوى الحالي</span>
@@ -254,9 +151,7 @@ export default function Dashboard() {
                     <div style={{ background: '#0f1f30', borderRadius: '2px', height: '6px', marginBottom: '8px' }}>
                       <div style={{ background: level.color, height: '6px', borderRadius: '2px', width: `${levelPercent}%`, transition: 'width 1.2s cubic-bezier(0.4,0,0.2,1)', boxShadow: `0 0 8px ${level.color}66` }}></div>
                     </div>
-                    <p style={{ color: '#7090a8', fontSize: '12px', fontFamily: 'monospace' }}>
-                      {points} / {level.nextPts} نقطة للوصول لـ {level.next}
-                    </p>
+                    <p style={{ color: '#7090a8', fontSize: '12px', fontFamily: 'monospace' }}>{points} / {level.nextPts} نقطة للوصول لـ {level.next}</p>
                   </>
                 ) : (
                   <p style={{ color: level.color, fontSize: '13px', fontFamily: 'monospace' }}>🏆 وصلت للمستوى الأعلى!</p>
@@ -264,7 +159,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Stats Row */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px', marginTop: '28px' }}>
               {[
                 { label: 'النقاط', value: points, color: '#ffd700', icon: '⭐' },
@@ -285,10 +179,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Main Content */}
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 40px' }}>
-
-          {/* Tabs */}
           <div style={{ display: 'flex', gap: '4px', background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '10px', padding: '4px', width: 'fit-content', marginBottom: '32px' }}>
             {(['courses', 'progress'] as const).map(tab => (
               <button key={tab} className={`tab-btn ${activeTab === tab ? 'tab-active' : ''}`}
@@ -299,7 +190,6 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Courses Tab */}
           {activeTab === 'courses' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '20px' }}>
               {courses.map((course, i) => {
@@ -307,66 +197,36 @@ export default function Dashboard() {
                 const percent = Math.round((done / course.lessons) * 100)
                 const isComplete = percent === 100
                 const inProgress = percent > 0 && !isComplete
-
                 return (
                   <div key={course.id} className="course-card fade-up"
                     style={{ animationDelay: `${i * 0.08}s`, background: '#0a1520', border: `1px solid ${isComplete ? course.color + '55' : '#1a3a50'}`, borderRadius: '16px', overflow: 'hidden' }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.borderColor = course.color + 'aa'
-                      e.currentTarget.style.boxShadow = `0 24px 48px ${course.color}18, 0 0 0 1px ${course.color}22`
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.borderColor = isComplete ? course.color + '55' : '#1a3a50'
-                      e.currentTarget.style.boxShadow = 'none'
-                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = course.color + 'aa'; e.currentTarget.style.boxShadow = `0 24px 48px ${course.color}18` }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = isComplete ? course.color + '55' : '#1a3a50'; e.currentTarget.style.boxShadow = 'none' }}
                     onClick={() => window.location.href = `/dashboard/course/${course.id}`}>
-
-                    {/* Card Header */}
                     <div style={{ background: course.bg, padding: '28px 24px', position: 'relative', overflow: 'hidden' }}>
                       <div style={{ position: 'absolute', top: '-20px', left: '-20px', width: '120px', height: '120px', background: course.color + '11', borderRadius: '50%' }}></div>
-                      <div style={{ position: 'absolute', bottom: '-30px', right: '-10px', width: '80px', height: '80px', background: course.color + '08', borderRadius: '50%' }}></div>
                       <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <span style={{ fontSize: '44px', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}>{course.icon}</span>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                          <span style={{ background: course.color + '22', border: `1px solid ${course.color}44`, color: course.color, padding: '3px 10px', borderRadius: '100px', fontSize: '11px', fontFamily: 'monospace', fontWeight: '700' }}>
-                            {course.level}
-                          </span>
-                          {isComplete && (
-                            <span style={{ background: 'rgba(0,255,136,0.15)', border: '1px solid #00ff8844', color: '#00ff88', padding: '3px 10px', borderRadius: '100px', fontSize: '11px', fontFamily: 'monospace' }}>
-                              ✓ مكتمل
-                            </span>
-                          )}
-                          {inProgress && (
-                            <span style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)', color: '#ffd700', padding: '3px 10px', borderRadius: '100px', fontSize: '11px', fontFamily: 'monospace' }}>
-                              ● جاري
-                            </span>
-                          )}
+                          <span style={{ background: course.color + '22', border: `1px solid ${course.color}44`, color: course.color, padding: '3px 10px', borderRadius: '100px', fontSize: '11px', fontFamily: 'monospace', fontWeight: '700' }}>{course.level}</span>
+                          {isComplete && <span style={{ background: 'rgba(0,255,136,0.15)', border: '1px solid #00ff8844', color: '#00ff88', padding: '3px 10px', borderRadius: '100px', fontSize: '11px', fontFamily: 'monospace' }}>✓ مكتمل</span>}
+                          {inProgress && <span style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)', color: '#ffd700', padding: '3px 10px', borderRadius: '100px', fontSize: '11px', fontFamily: 'monospace' }}>● جاري</span>}
                         </div>
                       </div>
                       <h3 style={{ position: 'relative', color: 'white', fontWeight: '900', fontSize: '17px', marginTop: '16px', lineHeight: '1.4' }}>{course.title}</h3>
                     </div>
-
-                    {/* Card Body */}
                     <div style={{ padding: '20px 24px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                         <span style={{ color: '#7090a8', fontSize: '13px', fontFamily: 'monospace' }}>{done}/{course.lessons} درس</span>
                         <span style={{ color: isComplete ? '#00ff88' : course.color, fontSize: '13px', fontFamily: 'monospace', fontWeight: '700' }}>{percent}%</span>
                       </div>
                       <div style={{ background: '#0f1f30', borderRadius: '2px', height: '4px', marginBottom: '18px' }}>
-                        <div style={{ background: `linear-gradient(90deg, ${course.color}, ${course.color}99)`, height: '4px', borderRadius: '2px', width: `${percent}%`, transition: 'width 1s cubic-bezier(0.4,0,0.2,1)', boxShadow: percent > 0 ? `0 0 8px ${course.color}88` : 'none' }}></div>
+                        <div style={{ background: `linear-gradient(90deg,${course.color},${course.color}99)`, height: '4px', borderRadius: '2px', width: `${percent}%`, transition: 'width 1s', boxShadow: percent > 0 ? `0 0 8px ${course.color}88` : 'none' }}></div>
                       </div>
                       <button className="course-btn"
                         style={{ width: '100%', padding: '11px', border: `1px solid ${course.color}66`, borderRadius: '8px', background: isComplete ? course.color + '15' : course.color + '10', color: course.color, fontFamily: 'Cairo,sans-serif', fontSize: '14px', fontWeight: '700' }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.background = course.color + '30'
-                          e.currentTarget.style.borderColor = course.color + 'aa'
-                          e.currentTarget.style.boxShadow = `0 0 20px ${course.color}33`
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.background = isComplete ? course.color + '15' : course.color + '10'
-                          e.currentTarget.style.borderColor = course.color + '66'
-                          e.currentTarget.style.boxShadow = 'none'
-                        }}>
+                        onMouseEnter={e => { e.currentTarget.style.background = course.color + '30'; e.currentTarget.style.borderColor = course.color + 'aa'; e.currentTarget.style.boxShadow = `0 0 20px ${course.color}33` }}
+                        onMouseLeave={e => { e.currentTarget.style.background = isComplete ? course.color + '15' : course.color + '10'; e.currentTarget.style.borderColor = course.color + '66'; e.currentTarget.style.boxShadow = 'none' }}>
                         {isComplete ? '✓ مراجعة المسار' : percent > 0 ? 'متابعة ←' : 'ابدأ المسار ←'}
                       </button>
                     </div>
@@ -376,7 +236,6 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Progress Tab */}
           {activeTab === 'progress' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '16px', padding: '28px' }}>
@@ -386,7 +245,7 @@ export default function Dashboard() {
                   const percent = Math.round((done / course.lessons) * 100)
                   return (
                     <div key={course.id} className="progress-row fade-up"
-                      style={{ animationDelay: `${i * 0.07}s`, marginBottom: '20px', borderRadius: '8px', padding: '10px', transition: 'background 0.2s', cursor: 'pointer' }}
+                      style={{ animationDelay: `${i * 0.07}s`, marginBottom: '20px', cursor: 'pointer' }}
                       onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       onClick={() => window.location.href = `/dashboard/course/${course.id}`}>
@@ -397,18 +256,17 @@ export default function Dashboard() {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <span style={{ color: '#7090a8', fontSize: '13px', fontFamily: 'monospace' }}>{done}/{course.lessons}</span>
-                          <span style={{ color: course.color, fontSize: '13px', fontFamily: 'monospace', fontWeight: '700', minWidth: '36px', textAlign: 'left' }}>{percent}%</span>
+                          <span style={{ color: course.color, fontSize: '13px', fontFamily: 'monospace', fontWeight: '700', minWidth: '36px' }}>{percent}%</span>
                         </div>
                       </div>
                       <div style={{ background: '#0f1f30', borderRadius: '2px', height: '6px' }}>
-                        <div style={{ background: `linear-gradient(90deg,${course.color},${course.color}88)`, height: '6px', borderRadius: '2px', width: `${percent}%`, transition: 'width 1.2s cubic-bezier(0.4,0,0.2,1)', boxShadow: percent > 0 ? `0 0 8px ${course.color}66` : 'none' }}></div>
+                        <div style={{ background: `linear-gradient(90deg,${course.color},${course.color}88)`, height: '6px', borderRadius: '2px', width: `${percent}%`, transition: 'width 1.2s', boxShadow: percent > 0 ? `0 0 8px ${course.color}66` : 'none' }}></div>
                       </div>
                     </div>
                   )
                 })}
               </div>
 
-              {/* Achievement Badges */}
               <div style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '16px', padding: '28px' }}>
                 <h3 style={{ color: '#00ff88', fontFamily: 'monospace', marginBottom: '24px', fontSize: '16px' }}>// الإنجازات</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
