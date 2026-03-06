@@ -3,7 +3,14 @@ import { useEffect, useState, use } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
-const DB_COURSE_ID = '00000000-0000-0000-0000-000000000001'
+const DB_COURSE_IDS: Record<string, string> = {
+  '1': '00000000-0000-0000-0000-000000000001',
+  '2': '00000000-0000-0000-0000-000000000002',
+  '3': '00000000-0000-0000-0000-000000000003',
+  '4': '00000000-0000-0000-0000-000000000004',
+  '5': '00000000-0000-0000-0000-000000000005',
+  '6': '00000000-0000-0000-0000-000000000006',
+}
 
 const staticCourses: Record<string, { title: string; icon: string }> = {
   '1': { title: 'أساسيات الأمن السيبراني', icon: '🛡️' },
@@ -45,7 +52,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
       setSessionToken(session.access_token)
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/lessons?course_id=eq.${DB_COURSE_ID}&order=order_num.asc`,
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/lessons?course_id=eq.${DB_COURSE_IDS[courseId] || DB_COURSE_IDS['1']}&order=order_num.asc`,
         { headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${session.access_token}` } }
       )
       const lessonsData = await res.json()
