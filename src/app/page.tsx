@@ -204,12 +204,12 @@ export default function LandingPage() {
             ))}
           </div>
           <div style={{ display:'flex', gap:'10px' }}>
-            <button onClick={() => router.push('/auth')} style={{ background:'transparent', border:'1px solid #1a3a50', color:'#7090a8', padding:'7px 18px', borderRadius:'100px', fontFamily:'Cairo,sans-serif', fontSize:'13px', cursor:'pointer', transition:'all 0.2s' }}
+            <button onClick={() => router.push('/login')} style={{ background:'transparent', border:'1px solid #1a3a50', color:'#7090a8', padding:'7px 18px', borderRadius:'100px', fontFamily:'Cairo,sans-serif', fontSize:'13px', cursor:'pointer', transition:'all 0.2s' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor='#00ff8866'; e.currentTarget.style.color='#00ff88' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor='#1a3a50'; e.currentTarget.style.color='#7090a8' }}>
               تسجيل الدخول
             </button>
-            <button className="nav-cta" onClick={() => router.push('/auth')}>ابدأ مجاناً ←</button>
+            <button className="nav-cta" onClick={() => router.push('/login')}>ابدأ مجاناً ←</button>
           </div>
         </nav>
 
@@ -240,8 +240,8 @@ export default function LandingPage() {
               </p>
 
               <div className="fade-up hero-btns" style={{ animationDelay:'0.3s', display:'flex', gap:'14px', flexWrap:'wrap', marginBottom:'48px' }}>
-                <button className="cta-primary" onClick={() => router.push('/auth')}>🚀 ابدأ مجاناً الآن</button>
-                <button className="cta-secondary" onClick={() => router.push('/auth')}>👀 استعرض المنصة</button>
+                <button className="cta-primary" onClick={() => router.push('/login')}>🚀 ابدأ مجاناً الآن</button>
+                <button className="cta-secondary" onClick={() => router.push('/login')}>👀 استعرض المنصة</button>
               </div>
 
               {/* Stats */}
@@ -467,7 +467,7 @@ export default function LandingPage() {
               <p style={{ color:'#7090a8', fontSize:'16px', marginBottom:'36px', position:'relative' }}>
                 انضم الآن وابدأ تعلّم الأمن السيبراني مجاناً
               </p>
-              <button className="cta-primary" onClick={() => router.push('/auth')} style={{ fontSize:'18px', padding:'16px 48px', position:'relative' }}>
+              <button className="cta-primary" onClick={() => router.push('/login')} style={{ fontSize:'18px', padding:'16px 48px', position:'relative' }}>
                 🔐 ابدأ التعلّم مجاناً
               </button>
             </div>
@@ -480,7 +480,7 @@ export default function LandingPage() {
           <p style={{ color:'#3a5a70', fontSize:'13px' }}>منصة الأمن السيبراني العربية — تعلّم، تحدّ، تقدّم</p>
           <div style={{ display:'flex', gap:'16px' }}>
             {['المميزات','الدروس','CTF'].map(l => (
-              <button key={l} onClick={() => router.push('/auth')} style={{ background:'none', border:'none', color:'#3a5a70', fontSize:'13px', cursor:'pointer', fontFamily:'Cairo,sans-serif', transition:'color 0.2s' }}
+              <button key={l} onClick={() => router.push('/login')} style={{ background:'none', border:'none', color:'#3a5a70', fontSize:'13px', cursor:'pointer', fontFamily:'Cairo,sans-serif', transition:'color 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.color='#00ff88'}
                 onMouseLeave={e => e.currentTarget.style.color='#3a5a70'}>{l}</button>
             ))}
