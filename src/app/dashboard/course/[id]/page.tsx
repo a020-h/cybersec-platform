@@ -113,25 +113,58 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   const finishQuiz = async () => {
     setShowQuiz(false)
     if (completed.has(currentLesson.id)) return
+
+    // ✅ تحقق من قاعدة البيانات لمنع التكرار
+    const checkRes = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/lesson_completions?user_id=eq.${user.id}&lesson_id=eq.${currentLesson.id}&select=id`,
+      { headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${sessionToken}` } }
+    )
+    const existing = await checkRes.json()
+    if (existing?.length > 0) {
+      // الدرس مكتمل مسبقاً — فقط حدّث الـ state المحلي
+      setCompleted(new Set([...completed, currentLesson.id]))
+      return
+    }
+
     const bonus = quizScore === questions.length ? 25 : quizScore > 0 ? 10 : 0
+
+    // أضف إكمال الدرس
     await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/lesson_completions`, {
       method: 'POST',
-      headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${sessionToken}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+      headers: {
+        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        'Authorization': `Bearer ${sessionToken}`,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ user_id: user.id, course_id: courseId, lesson_id: currentLesson.id })
     })
-    const newPoints = points + 15 + bonus
-    await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles`, {
-      method: 'POST',
-      headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${sessionToken}`, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
-      body: JSON.stringify({ id: user.id, points: newPoints })
+
+    // ✅ اقرأ النقاط الحالية من DB أولاً ثم أضف عليها
+    const freshProfile = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=points`,
+      { headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${sessionToken}` } }
+    )
+    const freshData = await freshProfile.json()
+    const freshPoints = freshData?.[0]?.points || 0
+    const newPoints = freshPoints + 15 + bonus
+
+    // ✅ استخدم PATCH بدل POST لتحديث النقاط
+    await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        'Authorization': `Bearer ${sessionToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ points: newPoints })
     })
+
     setCompleted(new Set([...completed, currentLesson.id]))
     setPoints(newPoints)
     const idx = lessons.findIndex(l => l.id === currentLesson.id)
     if (idx < lessons.length - 1) setCurrentLesson(lessons[idx + 1])
   }
 
-  // ✅ renderContent مُصلح - يعالج الجداول والنقاط بشكل صحيح
   const renderContent = (content: string): string => {
     const lines = content.split('\n')
     let html = ''
@@ -141,7 +174,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
     const flushTable = () => {
       if (!tableRows.length) return
       const header = tableRows[0]
-      const bodyRows = tableRows.slice(2) // تخطي سطر الفواصل ---
+      const bodyRows = tableRows.slice(2)
       html += `<div style="overflow-x:auto;margin:24px 0;border-radius:8px;border:1px solid #1a3a50">`
       html += `<table style="width:100%;border-collapse:collapse;font-size:14px;direction:rtl">`
       html += `<thead><tr>${header.map(h =>
@@ -163,18 +196,13 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
 
     for (const line of lines) {
       const trimmed = line.trim()
-
-      // جدول
       if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
         inTable = true
         const cells = trimmed.slice(1, -1).split('|')
         tableRows.push(cells)
         continue
       }
-
-      // إنهاء الجدول
       if (inTable) flushTable()
-
       if (trimmed.startsWith('## ')) {
         html += `<h2 style="font-size:22px;font-weight:900;color:${course.color};margin:32px 0 14px;font-family:monospace;letter-spacing:1px">${applyInline(trimmed.slice(3))}</h2>`
       } else if (trimmed.startsWith('### ')) {
@@ -199,7 +227,6 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
         html += `<p style="color:#a0c0d8;line-height:1.85;margin:6px 0">${applyInline(trimmed)}</p>`
       }
     }
-
     if (inTable) flushTable()
     return html
   }
@@ -220,10 +247,9 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Space+Mono:wght@400;700&display=swap');
-        * { margin:0; padding:0; box-sizing:border-box; }
+        * { margin:0; padding:0; box-sizing:border-box; list-style:none; }
+        ul, ol { padding:0; margin:0; }
         body { font-family:'Cairo',sans-serif; background:#050a0f; color:#e0f0ff; }
-* { list-style:none; }
-ul, ol { padding:0; margin:0; }
         ::-webkit-scrollbar { width:6px; }
         ::-webkit-scrollbar-track { background:#0a1520; }
         ::-webkit-scrollbar-thumb { background:#1a3a50; border-radius:3px; }
@@ -235,6 +261,7 @@ ul, ol { padding:0; margin:0; }
         .opt-wrong { border-color:#ff3366 !important; background:rgba(255,51,102,0.1) !important; color:#ff3366 !important; }
         .opt-dim { opacity:0.4; }
         @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes spin { to{transform:rotate(360deg)} }
         .lesson-content { animation:fadeIn 0.3s ease; }
         @media (max-width: 768px) {
           .sidebar-desktop { display: none !important; }
@@ -246,7 +273,6 @@ ul, ol { padding:0; margin:0; }
         }
       `}</style>
 
-      {/* Quiz Modal */}
       {showQuiz && (
         <div className="quiz-overlay">
           <div className="quiz-box" dir="rtl">
@@ -323,7 +349,6 @@ ul, ol { padding:0; margin:0; }
       )}
 
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        {/* Navbar */}
         <nav style={{ background: 'rgba(5,10,15,0.95)', borderBottom: '1px solid #1a3a50', padding: '0 32px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(20px)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <button onClick={() => router.push('/dashboard')}
@@ -342,7 +367,6 @@ ul, ol { padding:0; margin:0; }
         </nav>
 
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          {/* Sidebar */}
           <div className="sidebar-desktop" style={{ width: '280px', background: '#080f18', borderLeft: '1px solid #1a3a50', overflowY: 'auto', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '20px', borderBottom: '1px solid #1a3a50' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -373,7 +397,6 @@ ul, ol { padding:0; margin:0; }
             </div>
           </div>
 
-          {/* Main Content */}
           <div style={{ flex: 1, overflowY: 'auto', background: '#050a0f' }}>
             {currentLesson && (
               <div className="lesson-content lesson-main" style={{ maxWidth: '820px', margin: '0 auto', padding: '48px 40px' }}>
