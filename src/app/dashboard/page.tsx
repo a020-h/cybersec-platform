@@ -4,25 +4,19 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
 const courses = [
-  { id: 1, title: 'أساسيات الأمن السيبراني', level: 'مبتدئ', icon: '🛡️', lessons: 3, color: 'from-emerald-500 to-teal-700', bg: 'bg-emerald-500' },
-  { id: 2, title: 'الشبكات وبروتوكولات TCP/IP', level: 'مبتدئ', icon: '🌐', lessons: 2, color: 'from-blue-500 to-cyan-700', bg: 'bg-blue-500' },
-  { id: 3, title: 'اختبار الاختراق', level: 'متوسط', icon: '💻', lessons: 1, color: 'from-violet-500 to-purple-700', bg: 'bg-violet-500' },
-  { id: 4, title: 'تحليل البرمجيات الخبيثة', level: 'متقدم', icon: '🦠', lessons: 1, color: 'from-rose-500 to-red-700', bg: 'bg-rose-500' },
-  { id: 5, title: 'الهندسة الاجتماعية', level: 'متوسط', icon: '🎭', lessons: 1, color: 'from-amber-500 to-orange-700', bg: 'bg-amber-500' },
-  { id: 6, title: 'التشفير وعلم الكريبتو', level: 'متقدم', icon: '🔐', lessons: 1, color: 'from-pink-500 to-fuchsia-700', bg: 'bg-pink-500' },
+  { id: 1, title: 'أساسيات الأمن السيبراني', level: 'مبتدئ', icon: '🛡️', lessons: 3, color: '#00ff88', bg: 'linear-gradient(135deg,#0a2010,#051508)' },
+  { id: 2, title: 'الشبكات وبروتوكولات TCP/IP', level: 'مبتدئ', icon: '🌐', lessons: 2, color: '#00d4ff', bg: 'linear-gradient(135deg,#0a1020,#050a18)' },
+  { id: 3, title: 'اختبار الاختراق', level: 'متوسط', icon: '💻', lessons: 1, color: '#a855f7', bg: 'linear-gradient(135deg,#150a20,#0d0518)' },
+  { id: 4, title: 'تحليل البرمجيات الخبيثة', level: 'متقدم', icon: '🦠', lessons: 1, color: '#ff3366', bg: 'linear-gradient(135deg,#200a0a,#180505)' },
+  { id: 5, title: 'الهندسة الاجتماعية', level: 'متوسط', icon: '🎭', lessons: 1, color: '#ffd700', bg: 'linear-gradient(135deg,#1a1000,#120a00)' },
+  { id: 6, title: 'التشفير وعلم الكريبتو', level: 'متقدم', icon: '🔐', lessons: 1, color: '#ff6ec7', bg: 'linear-gradient(135deg,#200a18,#180510)' },
 ]
 
-const levelColors: Record<string, string> = {
-  'مبتدئ': 'bg-emerald-500 text-white',
-  'متوسط': 'bg-amber-500 text-white',
-  'متقدم': 'bg-rose-500 text-white',
-}
-
 const getLevel = (points: number) => {
-  if (points >= 200) return { label: 'خبير', color: 'text-yellow-400', icon: '👑' }
-  if (points >= 100) return { label: 'متقدم', color: 'text-purple-400', icon: '⚡' }
-  if (points >= 50) return { label: 'متوسط', color: 'text-blue-400', icon: '🔥' }
-  return { label: 'مبتدئ', color: 'text-green-400', icon: '🌱' }
+  if (points >= 300) return { label: 'خبير', color: '#ffd700', icon: '👑', next: null, nextPts: 0 }
+  if (points >= 150) return { label: 'متقدم', color: '#a855f7', icon: '⚡', next: 'خبير', nextPts: 300 }
+  if (points >= 50)  return { label: 'متوسط', color: '#00d4ff', icon: '🔥', next: 'متقدم', nextPts: 150 }
+  return { label: 'مبتدئ', color: '#00ff88', icon: '🌱', next: 'متوسط', nextPts: 50 }
 }
 
 export default function Dashboard() {
@@ -30,12 +24,15 @@ export default function Dashboard() {
   const [points, setPoints] = useState(0)
   const [lessonsCompleted, setLessonsCompleted] = useState(0)
   const [courseProgress, setCourseProgress] = useState<Record<number, number>>({})
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'courses' | 'progress'>('courses')
   const router = useRouter()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) { router.push('/') }
-      else { setUser(session.user); loadStats(session.user.id) }
+      if (!session) { router.push('/'); return }
+      setUser(session.user)
+      loadStats(session.user.id)
     })
   }, [])
 
@@ -46,140 +43,390 @@ export default function Dashboard() {
     if (completions) {
       setLessonsCompleted(completions.length)
       const progress: Record<number, number> = {}
-      completions.forEach((c: any) => { progress[c.course_id] = (progress[c.course_id] || 0) + 1 })
+      completions.forEach((c: any) => { progress[parseInt(c.course_id)] = (progress[parseInt(c.course_id)] || 0) + 1 })
       setCourseProgress(progress)
     }
+    setLoading(false)
   }
 
-  if (!user) return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-gray-400">جاري التحميل...</p>
-      </div>
+  if (loading) return (
+    <div style={{ minHeight: '100vh', background: '#050a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ width: '48px', height: '48px', border: '3px solid #00ff88', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+      <p style={{ color: '#7090a8', fontFamily: 'monospace' }}>جاري التحميل...</p>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
 
   const level = getLevel(points)
   const totalLessons = courses.reduce((a, c) => a + c.lessons, 0)
+  const completedCourses = courses.filter(c => (courseProgress[c.id] || 0) >= c.lessons).length
+  const levelPercent = level.nextPts ? Math.min(100, Math.round((points / level.nextPts) * 100)) : 100
+  const username = user?.email?.split('@')[0] || 'المستخدم'
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white" dir="rtl">
-      {/* Navbar */}
-      <nav className="bg-gray-900 border-b border-gray-800 px-6 py-4 sticky top-0 z-50 backdrop-blur-sm bg-opacity-90">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">🔐 CYBERعربي</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-full">
-              <span className="text-yellow-400">⭐</span>
-              <span className="font-bold text-white">{points}</span>
-              <span className="text-gray-400 text-sm">نقطة</span>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Space+Mono:wght@400;700&display=swap');
+        * { margin:0; padding:0; box-sizing:border-box; list-style:none; }
+        body { font-family:'Cairo',sans-serif; background:#050a0f; color:#e0f0ff; }
+        body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(#1a3a5022 1px,transparent 1px),linear-gradient(90deg,#1a3a5022 1px,transparent 1px); background-size:60px 60px; z-index:0; pointer-events:none; }
+        ::-webkit-scrollbar { width:6px; }
+        ::-webkit-scrollbar-track { background:#0a1520; }
+        ::-webkit-scrollbar-thumb { background:#1a3a50; border-radius:3px; }
+
+        @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+        @keyframes spin { to{transform:rotate(360deg)} }
+        @keyframes shimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
+        @keyframes borderGlow { 0%,100%{box-shadow:0 0 8px #00ff8833} 50%{box-shadow:0 0 24px #00ff8866} }
+
+        .fade-up { animation:fadeUp 0.5s cubic-bezier(0.4,0,0.2,1) both; }
+
+        /* Stat Cards */
+        .stat-card {
+          transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+          cursor: default;
+        }
+        .stat-card:hover {
+          transform: translateY(-4px) scale(1.02);
+          border-color: #00ff8855 !important;
+          box-shadow: 0 12px 32px rgba(0,255,136,0.1);
+        }
+
+        /* Course Cards */
+        .course-card {
+          transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+          cursor: pointer;
+          position: relative;
+        }
+        .course-card::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: 16px;
+          opacity: 0;
+          transition: opacity 0.3s;
+          pointer-events: none;
+        }
+        .course-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 24px 48px rgba(0,0,0,0.5);
+        }
+        .course-card:active {
+          transform: translateY(-4px);
+        }
+
+        /* Course Button */
+        .course-btn {
+          transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+          cursor: pointer;
+        }
+        .course-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .course-btn:active {
+          transform: scale(0.97);
+        }
+
+        /* Nav Buttons */
+        .logout-btn {
+          transition: all 0.2s;
+        }
+        .logout-btn:hover {
+          background: rgba(255,51,102,0.25) !important;
+          box-shadow: 0 0 16px rgba(255,51,102,0.2);
+          transform: translateY(-1px);
+        }
+
+        /* Tab Buttons */
+        .tab-btn {
+          transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+        }
+        .tab-btn:hover:not(.tab-active) {
+          color: #00ff88 !important;
+          background: rgba(0,255,136,0.08) !important;
+        }
+
+        /* Badge Cards */
+        .badge-card {
+          transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+          cursor: default;
+        }
+        .badge-card.unlocked:hover {
+          transform: translateY(-4px) scale(1.04);
+          box-shadow: 0 8px 24px rgba(0,255,136,0.15);
+          border-color: #00ff8888 !important;
+        }
+
+        /* Progress Rows */
+        .progress-row {
+          transition: all 0.2s;
+          border-radius: 8px;
+          padding: 8px;
+          margin: -8px;
+          margin-bottom: 12px;
+        }
+        .progress-row:hover {
+          background: rgba(255,255,255,0.03);
+        }
+
+        /* Back button */
+        .back-btn {
+          transition: all 0.2s;
+        }
+        .back-btn:hover {
+          border-color: #00ff88 !important;
+          color: #00ff88 !important;
+          box-shadow: 0 0 12px rgba(0,255,136,0.15);
+        }
+
+        /* Level card glow */
+        .level-card {
+          transition: all 0.3s;
+        }
+        .level-card:hover {
+          box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+          transform: translateY(-2px);
+        }
+      `}</style>
+
+      <div style={{ minHeight: '100vh', position: 'relative', zIndex: 1 }} dir="rtl">
+
+        {/* Navbar */}
+        <nav style={{ background: 'rgba(5,10,15,0.95)', borderBottom: '1px solid #1a3a50', padding: '0 40px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(20px)' }}>
+          <span style={{ fontFamily: 'monospace', fontSize: '20px', fontWeight: '700', color: '#00ff88', letterSpacing: '2px' }}>
+            🔐 CYBER<span style={{ color: '#7090a8' }}>عربي</span>
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '100px', padding: '6px 16px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
+              <span style={{ color: '#ffd700' }}>⭐</span>
+              <span style={{ fontFamily: 'monospace', fontWeight: '700', color: 'white' }}>{points}</span>
+              <span style={{ color: '#7090a8', fontSize: '13px' }}>نقطة</span>
             </div>
-            <div className="hidden md:flex items-center gap-2 bg-gray-800 px-3 py-2 rounded-full text-sm text-gray-300">
-              {user.email?.split('@')[0]}
+            <div style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '100px', padding: '6px 14px', fontSize: '13px', color: '#7090a8' }}>
+              {username}
             </div>
-            <button onClick={() => supabase.auth.signOut().then(() => router.push('/'))}
-              className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full text-sm font-medium transition">
+            <button className="logout-btn" onClick={() => supabase.auth.signOut().then(() => router.push('/'))}
+              style={{ background: 'rgba(255,51,102,0.1)', border: '1px solid rgba(255,51,102,0.3)', color: '#ff3366', padding: '6px 16px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer' }}>
               خروج
             </button>
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      {/* Hero */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-green-900/20 via-gray-950 to-blue-900/20"></div>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-green-500/10 rounded-full blur-3xl"></div>
-        <div className="relative max-w-7xl mx-auto px-6 py-16 text-center">
-          <div className="inline-flex items-center gap-2 bg-gray-800 border border-gray-700 px-4 py-2 rounded-full text-sm text-gray-300 mb-6">
-            <span>{level.icon}</span>
-            <span>مستواك الحالي:</span>
-            <span className={`font-bold ${level.color}`}>{level.label}</span>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black mb-3">
-            أهلاً، <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">{user.email?.split('@')[0]}</span> 👋
-          </h1>
-          <p className="text-gray-400 text-lg mb-10">واصل رحلتك في عالم الأمن السيبراني</p>
+        {/* Hero Banner */}
+        <div style={{ background: 'linear-gradient(135deg,#080f18,#050a0f)', borderBottom: '1px solid #1a3a50', padding: '40px 40px 32px' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '24px' }}>
 
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-green-500/50 transition">
-              <p className="text-3xl font-black text-green-400 mb-1">{points}</p>
-              <p className="text-gray-400 text-sm">نقطة مكتسبة</p>
-            </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-blue-500/50 transition">
-              <p className="text-3xl font-black text-blue-400 mb-1">{lessonsCompleted}</p>
-              <p className="text-gray-400 text-sm">درس مكتمل</p>
-            </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-purple-500/50 transition">
-              <p className="text-3xl font-black text-purple-400 mb-1">{Math.round((lessonsCompleted/totalLessons)*100)}%</p>
-              <p className="text-gray-400 text-sm">نسبة الإنجاز</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Courses */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-black">المسارات التعليمية</h2>
-            <p className="text-gray-400 mt-1">اختر مساراً وابدأ التعلم</p>
-          </div>
-          <div className="bg-gray-900 border border-gray-800 px-4 py-2 rounded-full text-sm text-gray-400">
-            {courses.filter(c => (courseProgress[c.id] || 0) >= c.lessons).length}/{courses.length} مسار مكتمل
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map(course => {
-            const done = courseProgress[course.id] || 0
-            const percent = Math.round((done / course.lessons) * 100)
-            const isComplete = percent === 100
-
-            return (
-              <div key={course.id}
-                className="group bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-600 transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/50">
-                {/* Card Header */}
-                <div className={`bg-gradient-to-br ${course.color} p-6 relative overflow-hidden`}>
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                  <div className="relative flex justify-between items-start">
-                    <span className="text-5xl">{course.icon}</span>
-                    <span className={`text-xs px-3 py-1 rounded-full font-medium bg-black/30 text-white`}>
-                      {course.level}
-                    </span>
-                  </div>
-                  <h3 className="relative text-xl font-bold mt-4 text-white">{course.title}</h3>
+              {/* Welcome */}
+              <div className="fade-up">
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '100px', padding: '4px 14px', marginBottom: '14px' }}>
+                  <span style={{ animation: 'pulse 2s infinite', color: '#00ff88', fontSize: '10px' }}>●</span>
+                  <span style={{ color: '#7090a8', fontSize: '13px', fontFamily: 'monospace' }}>نشط الآن</span>
                 </div>
+                <h1 style={{ fontSize: '32px', fontWeight: '900', color: 'white', marginBottom: '6px' }}>
+                  أهلاً، <span style={{ color: '#00ff88' }}>{username}</span> 👋
+                </h1>
+                <p style={{ color: '#7090a8', fontSize: '15px' }}>
+                  واصل رحلتك — أنت في المستوى <span style={{ color: level.color, fontWeight: '700' }}>{level.icon} {level.label}</span>
+                </p>
+              </div>
 
-                {/* Card Body */}
-                <div className="p-5">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-gray-400 text-sm">{done}/{course.lessons} درس</span>
-                    <span className={`text-sm font-bold ${isComplete ? 'text-green-400' : 'text-gray-400'}`}>
-                      {percent}%
-                    </span>
+              {/* Level Card */}
+              <div className="fade-up level-card" style={{ background: '#0a1520', border: `1px solid ${level.color}33`, borderRadius: '16px', padding: '20px 28px', minWidth: '260px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <span style={{ color: '#7090a8', fontSize: '13px', fontFamily: 'monospace' }}>المستوى الحالي</span>
+                  <span style={{ fontSize: '22px' }}>{level.icon}</span>
+                </div>
+                <p style={{ color: level.color, fontWeight: '900', fontSize: '22px', fontFamily: 'monospace', marginBottom: '12px' }}>{level.label}</p>
+                {level.next ? (
+                  <>
+                    <div style={{ background: '#0f1f30', borderRadius: '2px', height: '6px', marginBottom: '8px' }}>
+                      <div style={{ background: level.color, height: '6px', borderRadius: '2px', width: `${levelPercent}%`, transition: 'width 1.2s cubic-bezier(0.4,0,0.2,1)', boxShadow: `0 0 8px ${level.color}66` }}></div>
+                    </div>
+                    <p style={{ color: '#7090a8', fontSize: '12px', fontFamily: 'monospace' }}>
+                      {points} / {level.nextPts} نقطة للوصول لـ {level.next}
+                    </p>
+                  </>
+                ) : (
+                  <p style={{ color: level.color, fontSize: '13px', fontFamily: 'monospace' }}>🏆 وصلت للمستوى الأعلى!</p>
+                )}
+              </div>
+            </div>
+
+            {/* Stats Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px', marginTop: '28px' }}>
+              {[
+                { label: 'النقاط', value: points, color: '#ffd700', icon: '⭐' },
+                { label: 'دروس مكتملة', value: lessonsCompleted, color: '#00ff88', icon: '✓' },
+                { label: 'مسارات مكتملة', value: completedCourses, color: '#00d4ff', icon: '🎯' },
+                { label: 'نسبة الإنجاز', value: `${Math.round((lessonsCompleted / totalLessons) * 100)}%`, color: '#a855f7', icon: '📈' },
+              ].map((stat, i) => (
+                <div key={i} className="fade-up stat-card"
+                  style={{ animationDelay: `${i * 0.1}s`, background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '12px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <span style={{ fontSize: '24px' }}>{stat.icon}</span>
+                  <div>
+                    <p style={{ fontFamily: 'monospace', fontSize: '22px', fontWeight: '700', color: stat.color, lineHeight: '1' }}>{stat.value}</p>
+                    <p style={{ color: '#7090a8', fontSize: '12px', marginTop: '4px' }}>{stat.label}</p>
                   </div>
-                  <div className="w-full bg-gray-800 rounded-full h-2 mb-5">
-                    <div className={`h-2 rounded-full transition-all bg-gradient-to-r ${course.color}`}
-                      style={{ width: `${percent}%` }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 40px' }}>
+
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: '4px', background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '10px', padding: '4px', width: 'fit-content', marginBottom: '32px' }}>
+            {(['courses', 'progress'] as const).map(tab => (
+              <button key={tab} className={`tab-btn ${activeTab === tab ? 'tab-active' : ''}`}
+                onClick={() => setActiveTab(tab)}
+                style={{ padding: '8px 24px', borderRadius: '8px', border: 'none', fontFamily: 'Cairo,sans-serif', fontSize: '14px', fontWeight: '700', cursor: 'pointer', background: activeTab === tab ? '#00ff88' : 'transparent', color: activeTab === tab ? '#050a0f' : '#7090a8' }}>
+                {tab === 'courses' ? '📚 المسارات' : '📊 تقدمي'}
+              </button>
+            ))}
+          </div>
+
+          {/* Courses Tab */}
+          {activeTab === 'courses' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '20px' }}>
+              {courses.map((course, i) => {
+                const done = courseProgress[course.id] || 0
+                const percent = Math.round((done / course.lessons) * 100)
+                const isComplete = percent === 100
+                const inProgress = percent > 0 && !isComplete
+
+                return (
+                  <div key={course.id} className="course-card fade-up"
+                    style={{ animationDelay: `${i * 0.08}s`, background: '#0a1520', border: `1px solid ${isComplete ? course.color + '55' : '#1a3a50'}`, borderRadius: '16px', overflow: 'hidden' }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = course.color + 'aa'
+                      e.currentTarget.style.boxShadow = `0 24px 48px ${course.color}18, 0 0 0 1px ${course.color}22`
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = isComplete ? course.color + '55' : '#1a3a50'
+                      e.currentTarget.style.boxShadow = 'none'
+                    }}
+                    onClick={() => window.location.href = `/dashboard/course/${course.id}`}>
+
+                    {/* Card Header */}
+                    <div style={{ background: course.bg, padding: '28px 24px', position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', top: '-20px', left: '-20px', width: '120px', height: '120px', background: course.color + '11', borderRadius: '50%' }}></div>
+                      <div style={{ position: 'absolute', bottom: '-30px', right: '-10px', width: '80px', height: '80px', background: course.color + '08', borderRadius: '50%' }}></div>
+                      <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <span style={{ fontSize: '44px', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }}>{course.icon}</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                          <span style={{ background: course.color + '22', border: `1px solid ${course.color}44`, color: course.color, padding: '3px 10px', borderRadius: '100px', fontSize: '11px', fontFamily: 'monospace', fontWeight: '700' }}>
+                            {course.level}
+                          </span>
+                          {isComplete && (
+                            <span style={{ background: 'rgba(0,255,136,0.15)', border: '1px solid #00ff8844', color: '#00ff88', padding: '3px 10px', borderRadius: '100px', fontSize: '11px', fontFamily: 'monospace' }}>
+                              ✓ مكتمل
+                            </span>
+                          )}
+                          {inProgress && (
+                            <span style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)', color: '#ffd700', padding: '3px 10px', borderRadius: '100px', fontSize: '11px', fontFamily: 'monospace' }}>
+                              ● جاري
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <h3 style={{ position: 'relative', color: 'white', fontWeight: '900', fontSize: '17px', marginTop: '16px', lineHeight: '1.4' }}>{course.title}</h3>
+                    </div>
+
+                    {/* Card Body */}
+                    <div style={{ padding: '20px 24px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <span style={{ color: '#7090a8', fontSize: '13px', fontFamily: 'monospace' }}>{done}/{course.lessons} درس</span>
+                        <span style={{ color: isComplete ? '#00ff88' : course.color, fontSize: '13px', fontFamily: 'monospace', fontWeight: '700' }}>{percent}%</span>
+                      </div>
+                      <div style={{ background: '#0f1f30', borderRadius: '2px', height: '4px', marginBottom: '18px' }}>
+                        <div style={{ background: `linear-gradient(90deg, ${course.color}, ${course.color}99)`, height: '4px', borderRadius: '2px', width: `${percent}%`, transition: 'width 1s cubic-bezier(0.4,0,0.2,1)', boxShadow: percent > 0 ? `0 0 8px ${course.color}88` : 'none' }}></div>
+                      </div>
+                      <button className="course-btn"
+                        style={{ width: '100%', padding: '11px', border: `1px solid ${course.color}66`, borderRadius: '8px', background: isComplete ? course.color + '15' : course.color + '10', color: course.color, fontFamily: 'Cairo,sans-serif', fontSize: '14px', fontWeight: '700' }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.background = course.color + '30'
+                          e.currentTarget.style.borderColor = course.color + 'aa'
+                          e.currentTarget.style.boxShadow = `0 0 20px ${course.color}33`
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.background = isComplete ? course.color + '15' : course.color + '10'
+                          e.currentTarget.style.borderColor = course.color + '66'
+                          e.currentTarget.style.boxShadow = 'none'
+                        }}>
+                        {isComplete ? '✓ مراجعة المسار' : percent > 0 ? 'متابعة ←' : 'ابدأ المسار ←'}
+                      </button>
+                    </div>
                   </div>
-                  <button onClick={() => window.location.href = `/dashboard/course/${course.id}`}
-                    className={`w-full py-3 rounded-xl font-bold text-sm transition
-                      ${isComplete
-                        ? 'bg-gray-800 hover:bg-gray-700 text-green-400 border border-green-500/30'
-                        : `bg-gradient-to-r ${course.color} text-white hover:opacity-90`
-                      }`}>
-                    {isComplete ? '✓ مكتمل — مراجعة' : percent > 0 ? 'متابعة المسار ←' : 'ابدأ المسار ←'}
-                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Progress Tab */}
+          {activeTab === 'progress' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '16px', padding: '28px' }}>
+                <h3 style={{ color: '#00ff88', fontFamily: 'monospace', marginBottom: '24px', fontSize: '16px' }}>// تقدمك في كل مسار</h3>
+                {courses.map((course, i) => {
+                  const done = courseProgress[course.id] || 0
+                  const percent = Math.round((done / course.lessons) * 100)
+                  return (
+                    <div key={course.id} className="progress-row fade-up"
+                      style={{ animationDelay: `${i * 0.07}s`, marginBottom: '20px', borderRadius: '8px', padding: '10px', transition: 'background 0.2s', cursor: 'pointer' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      onClick={() => window.location.href = `/dashboard/course/${course.id}`}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ fontSize: '18px' }}>{course.icon}</span>
+                          <span style={{ color: 'white', fontSize: '14px', fontWeight: '600' }}>{course.title}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ color: '#7090a8', fontSize: '13px', fontFamily: 'monospace' }}>{done}/{course.lessons}</span>
+                          <span style={{ color: course.color, fontSize: '13px', fontFamily: 'monospace', fontWeight: '700', minWidth: '36px', textAlign: 'left' }}>{percent}%</span>
+                        </div>
+                      </div>
+                      <div style={{ background: '#0f1f30', borderRadius: '2px', height: '6px' }}>
+                        <div style={{ background: `linear-gradient(90deg,${course.color},${course.color}88)`, height: '6px', borderRadius: '2px', width: `${percent}%`, transition: 'width 1.2s cubic-bezier(0.4,0,0.2,1)', boxShadow: percent > 0 ? `0 0 8px ${course.color}66` : 'none' }}></div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Achievement Badges */}
+              <div style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '16px', padding: '28px' }}>
+                <h3 style={{ color: '#00ff88', fontFamily: 'monospace', marginBottom: '24px', fontSize: '16px' }}>// الإنجازات</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px' }}>
+                  {[
+                    { icon: '🌱', label: 'المبتدئ', desc: 'أكمل أول درس', unlocked: lessonsCompleted >= 1 },
+                    { icon: '🔥', label: 'متحمس', desc: 'أكمل 5 دروس', unlocked: lessonsCompleted >= 5 },
+                    { icon: '⚡', label: 'سريع', desc: 'أكمل مسار كامل', unlocked: completedCourses >= 1 },
+                    { icon: '🏆', label: 'بطل', desc: '200+ نقطة', unlocked: points >= 200 },
+                    { icon: '🎯', label: 'دقيق', desc: 'اجتاز اختباراً كاملاً', unlocked: points >= 40 },
+                    { icon: '👑', label: 'الخبير', desc: 'أكمل 3 مسارات', unlocked: completedCourses >= 3 },
+                    { icon: '🔐', label: 'المشفِّر', desc: 'مسار التشفير', unlocked: (courseProgress[6] || 0) >= 1 },
+                    { icon: '💻', label: 'المخترق', desc: 'مسار الاختراق', unlocked: (courseProgress[3] || 0) >= 1 },
+                  ].map((badge, i) => (
+                    <div key={i} className={`badge-card ${badge.unlocked ? 'unlocked' : ''} fade-up`}
+                      style={{ animationDelay: `${i * 0.06}s`, background: badge.unlocked ? '#0f1f30' : '#080f18', border: `1px solid ${badge.unlocked ? '#00ff8844' : '#1a3a50'}`, borderRadius: '12px', padding: '16px', textAlign: 'center', opacity: badge.unlocked ? 1 : 0.35 }}>
+                      <div style={{ fontSize: '28px', marginBottom: '8px', filter: badge.unlocked ? 'drop-shadow(0 0 8px rgba(0,255,136,0.3))' : 'grayscale(1)' }}>{badge.icon}</div>
+                      <p style={{ color: badge.unlocked ? 'white' : '#7090a8', fontWeight: '700', fontSize: '13px', marginBottom: '4px' }}>{badge.label}</p>
+                      <p style={{ color: '#7090a8', fontSize: '11px' }}>{badge.desc}</p>
+                      {badge.unlocked && <p style={{ color: '#00ff88', fontSize: '10px', fontFamily: 'monospace', marginTop: '6px' }}>✓ مفتوح</p>}
+                    </div>
+                  ))}
                 </div>
               </div>
-            )
-          })}
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </>
   )
 }

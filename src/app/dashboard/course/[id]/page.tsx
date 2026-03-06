@@ -131,26 +131,83 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
     if (idx < lessons.length - 1) setCurrentLesson(lessons[idx + 1])
   }
 
-  const renderContent = (content: string) => content
-    .replace(/^## (.+)$/gm, `<h2 style="font-size:22px;font-weight:900;color:${course.color};margin:28px 0 12px;font-family:monospace">$1</h2>`)
-    .replace(/^### (.+)$/gm, '<h3 style="font-size:17px;font-weight:700;color:#00d4ff;margin:20px 0 8px">$1</h3>')
-    .replace(/\*\*(.+?)\*\*/g, `<strong style="color:white;font-weight:800">$1</strong>`)
-    .replace(/^- (.+)$/gm, '<li style="margin:6px 0;color:#a0c0d8;padding-right:8px">▸ $1</li>')
-    .replace(/^(\d+)\. (.+)$/gm, '<li style="margin:6px 0;color:#a0c0d8;padding-right:8px">$1. $2</li>')
-    .replace(/^> (.+)$/gm, `<blockquote style="border-right:3px solid ${course.color};padding:12px 16px;margin:16px 0;background:#0a1520;border-radius:4px;color:#a0c0d8;font-style:italic">$1</blockquote>`)
-    .replace(/\|(.+)\|/g, (match) => {
-      const cells = match.split('|').filter(c => c.trim())
-      return '<div style="display:flex;gap:1px;margin:2px 0">' + cells.map(c =>
-        `<span style="flex:1;background:#0f1f30;padding:8px 12px;font-size:13px;color:#a0c0d8;border:1px solid #1a3a50">${c.trim()}</span>`
-      ).join('') + '</div>'
-    })
-    .replace(/`(.+?)`/g, `<code style="background:#0f1f30;border:1px solid #1a3a50;padding:2px 8px;border-radius:3px;color:${course.color};font-family:monospace;font-size:13px">$1</code>`)
-    .replace(/\n\n/g, '<br/>')
+  // ✅ renderContent مُصلح - يعالج الجداول والنقاط بشكل صحيح
+  const renderContent = (content: string): string => {
+    const lines = content.split('\n')
+    let html = ''
+    let tableRows: string[][] = []
+    let inTable = false
+
+    const flushTable = () => {
+      if (!tableRows.length) return
+      const header = tableRows[0]
+      const bodyRows = tableRows.slice(2) // تخطي سطر الفواصل ---
+      html += `<div style="overflow-x:auto;margin:24px 0;border-radius:8px;border:1px solid #1a3a50">`
+      html += `<table style="width:100%;border-collapse:collapse;font-size:14px;direction:rtl">`
+      html += `<thead><tr>${header.map(h =>
+        `<th style="padding:12px 16px;background:#0f1f30;color:${course.color};font-family:monospace;font-weight:700;text-align:right;border-bottom:2px solid #1a3a50;white-space:nowrap">${h.trim()}</th>`
+      ).join('')}</tr></thead>`
+      html += `<tbody>${bodyRows.map((row, i) =>
+        `<tr style="background:${i % 2 === 0 ? 'transparent' : '#0a152088'}">${row.map(cell =>
+          `<td style="padding:10px 16px;color:#a0c0d8;border-bottom:1px solid #1a3a5044;text-align:right">${cell.trim()}</td>`
+        ).join('')}</tr>`
+      ).join('')}</tbody>`
+      html += `</table></div>`
+      tableRows = []
+      inTable = false
+    }
+
+    const applyInline = (text: string): string => text
+      .replace(/\*\*(.+?)\*\*/g, `<strong style="color:white;font-weight:800">$1</strong>`)
+      .replace(/`(.+?)`/g, `<code style="background:#0f1f30;border:1px solid #1a3a50;padding:2px 8px;border-radius:3px;color:${course.color};font-family:monospace;font-size:13px">$1</code>`)
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+
+      // جدول
+      if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+        inTable = true
+        const cells = trimmed.slice(1, -1).split('|')
+        tableRows.push(cells)
+        continue
+      }
+
+      // إنهاء الجدول
+      if (inTable) flushTable()
+
+      if (trimmed.startsWith('## ')) {
+        html += `<h2 style="font-size:22px;font-weight:900;color:${course.color};margin:32px 0 14px;font-family:monospace;letter-spacing:1px">${applyInline(trimmed.slice(3))}</h2>`
+      } else if (trimmed.startsWith('### ')) {
+        html += `<h3 style="font-size:17px;font-weight:700;color:#00d4ff;margin:22px 0 10px">${applyInline(trimmed.slice(4))}</h3>`
+      } else if (trimmed.startsWith('- ')) {
+        html += `<div style="display:flex;align-items:flex-start;gap:10px;margin:8px 0;padding-right:4px">
+          <span style="color:${course.color};font-size:11px;margin-top:6px;flex-shrink:0">▸</span>
+          <span style="color:#a0c0d8;line-height:1.75">${applyInline(trimmed.slice(2))}</span>
+        </div>`
+      } else if (/^\d+\.\s/.test(trimmed)) {
+        const num = trimmed.match(/^(\d+)\./)?.[1]
+        const text = trimmed.replace(/^\d+\.\s/, '')
+        html += `<div style="display:flex;align-items:flex-start;gap:12px;margin:8px 0;padding-right:4px">
+          <span style="color:${course.color};font-family:monospace;font-weight:700;flex-shrink:0;min-width:20px">${num}.</span>
+          <span style="color:#a0c0d8;line-height:1.75">${applyInline(text)}</span>
+        </div>`
+      } else if (trimmed.startsWith('> ')) {
+        html += `<blockquote style="border-right:3px solid ${course.color};padding:12px 18px;margin:18px 0;background:#0a152088;border-radius:0 8px 8px 0;color:#a0c0d8;font-style:italic;line-height:1.7">${applyInline(trimmed.slice(2))}</blockquote>`
+      } else if (trimmed === '') {
+        html += `<div style="height:10px"></div>`
+      } else {
+        html += `<p style="color:#a0c0d8;line-height:1.85;margin:6px 0">${applyInline(trimmed)}</p>`
+      }
+    }
+
+    if (inTable) flushTable()
+    return html
+  }
 
   if (loading) return (
-    <div style={{ minHeight:'100vh', background:'#050a0f', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:'16px' }}>
-      <div style={{ width:'48px', height:'48px', border:`3px solid ${course.color}`, borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}></div>
-      <p style={{ color:'#7090a8', fontFamily:'monospace' }}>جاري التحميل...</p>
+    <div style={{ minHeight: '100vh', background: '#050a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ width: '48px', height: '48px', border: `3px solid ${course.color}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+      <p style={{ color: '#7090a8', fontFamily: 'monospace' }}>جاري التحميل...</p>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
@@ -165,6 +222,8 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Space+Mono:wght@400;700&display=swap');
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Cairo',sans-serif; background:#050a0f; color:#e0f0ff; }
+* { list-style:none; }
+ul, ol { padding:0; margin:0; }
         ::-webkit-scrollbar { width:6px; }
         ::-webkit-scrollbar-track { background:#0a1520; }
         ::-webkit-scrollbar-thumb { background:#1a3a50; border-radius:3px; }
@@ -185,16 +244,16 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
           <div className="quiz-box" dir="rtl">
             {!quizDone ? (
               <>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
-                  <h2 style={{ color:course.color, fontFamily:'monospace', fontSize:'18px' }}>⚡ اختبر معلوماتك</h2>
-                  <span style={{ color:'#7090a8', fontSize:'13px', fontFamily:'monospace' }}>{currentQ + 1} / {questions.length}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h2 style={{ color: course.color, fontFamily: 'monospace', fontSize: '18px' }}>⚡ اختبر معلوماتك</h2>
+                  <span style={{ color: '#7090a8', fontSize: '13px', fontFamily: 'monospace' }}>{currentQ + 1} / {questions.length}</span>
                 </div>
-                <div style={{ background:'#0f1f30', borderRadius:'4px', height:'4px', marginBottom:'28px' }}>
-                  <div style={{ background:course.color, height:'4px', borderRadius:'4px', width:`${((currentQ+1)/questions.length)*100}%`, transition:'width 0.3s' }}></div>
+                <div style={{ background: '#0f1f30', borderRadius: '4px', height: '4px', marginBottom: '28px' }}>
+                  <div style={{ background: course.color, height: '4px', borderRadius: '4px', width: `${((currentQ + 1) / questions.length) * 100}%`, transition: 'width 0.3s' }}></div>
                 </div>
-                <p style={{ fontSize:'17px', fontWeight:'700', marginBottom:'24px', lineHeight:'1.6', color:'white' }}>{questions[currentQ].question}</p>
+                <p style={{ fontSize: '17px', fontWeight: '700', marginBottom: '24px', lineHeight: '1.6', color: 'white' }}>{questions[currentQ].question}</p>
                 <div>
-                  {['A','B','C','D'].map(opt => {
+                  {['A', 'B', 'C', 'D'].map(opt => {
                     const text = questions[currentQ][`option_${opt.toLowerCase()}`]
                     const isCorrect = opt === questions[currentQ].correct_answer
                     const isSelected = opt === selected
@@ -204,41 +263,49 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                       else if (isSelected) cls += ' opt-wrong'
                       else cls += ' opt-dim'
                     }
-                    return <button key={opt} className={cls} onClick={() => handleAnswer(opt)} disabled={answered}>
-                      <span style={{ fontFamily:'monospace', marginLeft:'10px', opacity:0.6 }}>{opt}.</span> {text}
-                    </button>
+                    return (
+                      <button key={opt} className={cls} onClick={() => handleAnswer(opt)} disabled={answered}>
+                        <span style={{ fontFamily: 'monospace', marginLeft: '10px', opacity: 0.6 }}>{opt}.</span> {text}
+                      </button>
+                    )
                   })}
                 </div>
                 {answered && (
-                  <div style={{ marginTop:'16px' }}>
-                    <div style={{ padding:'12px 16px', borderRadius:'8px', marginBottom:'16px', background: selected === questions[currentQ].correct_answer ? 'rgba(0,255,136,0.08)' : 'rgba(255,51,102,0.08)', border: `1px solid ${selected === questions[currentQ].correct_answer ? '#00ff88' : '#ff3366'}` }}>
-                      <p style={{ color: selected === questions[currentQ].correct_answer ? '#00ff88' : '#ff3366', fontWeight:'700', marginBottom:'6px' }}>
+                  <div style={{ marginTop: '16px' }}>
+                    <div style={{ padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', background: selected === questions[currentQ].correct_answer ? 'rgba(0,255,136,0.08)' : 'rgba(255,51,102,0.08)', border: `1px solid ${selected === questions[currentQ].correct_answer ? '#00ff88' : '#ff3366'}` }}>
+                      <p style={{ color: selected === questions[currentQ].correct_answer ? '#00ff88' : '#ff3366', fontWeight: '700', marginBottom: '6px' }}>
                         {selected === questions[currentQ].correct_answer ? '✓ إجابة صحيحة!' : '✗ إجابة خاطئة'}
                       </p>
-                      {questions[currentQ].explanation && <p style={{ color:'#7090a8', fontSize:'14px', lineHeight:'1.6' }}>{questions[currentQ].explanation}</p>}
+                      {questions[currentQ].explanation && (
+                        <p style={{ color: '#7090a8', fontSize: '14px', lineHeight: '1.6' }}>{questions[currentQ].explanation}</p>
+                      )}
                     </div>
-                    <button onClick={nextQuestion} style={{ width:'100%', padding:'14px', background:course.color, color:'#050a0f', border:'none', borderRadius:'8px', fontFamily:'Cairo,sans-serif', fontSize:'16px', fontWeight:'900', cursor:'pointer' }}>
+                    <button onClick={nextQuestion} style={{ width: '100%', padding: '14px', background: course.color, color: '#050a0f', border: 'none', borderRadius: '8px', fontFamily: 'Cairo,sans-serif', fontSize: '16px', fontWeight: '900', cursor: 'pointer' }}>
                       {currentQ < questions.length - 1 ? 'السؤال التالي ←' : 'إنهاء الاختبار'}
                     </button>
                   </div>
                 )}
               </>
             ) : (
-              <div style={{ textAlign:'center' }} dir="rtl">
-                <div style={{ fontSize:'64px', marginBottom:'16px' }}>{quizScore === questions.length ? '🏆' : quizScore >= questions.length/2 ? '👍' : '📚'}</div>
-                <h2 style={{ fontSize:'28px', fontWeight:'900', marginBottom:'8px' }}>نتيجتك: <span style={{ color:course.color }}>{quizScore}/{questions.length}</span></h2>
-                <p style={{ color:'#7090a8', marginBottom:'28px' }}>
-                  {quizScore === questions.length ? 'ممتاز! إجابات كاملة 🌟' : quizScore >= questions.length/2 ? 'جيد! راجع الإجابات الخاطئة' : 'راجع الدرس وحاول مرة ثانية'}
+              <div style={{ textAlign: 'center' }} dir="rtl">
+                <div style={{ fontSize: '64px', marginBottom: '16px' }}>
+                  {quizScore === questions.length ? '🏆' : quizScore >= questions.length / 2 ? '👍' : '📚'}
+                </div>
+                <h2 style={{ fontSize: '28px', fontWeight: '900', marginBottom: '8px' }}>
+                  نتيجتك: <span style={{ color: course.color }}>{quizScore}/{questions.length}</span>
+                </h2>
+                <p style={{ color: '#7090a8', marginBottom: '28px' }}>
+                  {quizScore === questions.length ? 'ممتاز! إجابات كاملة 🌟' : quizScore >= questions.length / 2 ? 'جيد! راجع الإجابات الخاطئة' : 'راجع الدرس وحاول مرة ثانية'}
                 </p>
-                <div style={{ background:'#0f1f30', border:'1px solid #1a3a50', borderRadius:'12px', padding:'20px', marginBottom:'24px' }}>
-                  <p style={{ color:course.color, fontWeight:'900', fontSize:'24px', fontFamily:'monospace' }}>
+                <div style={{ background: '#0f1f30', border: '1px solid #1a3a50', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
+                  <p style={{ color: course.color, fontWeight: '900', fontSize: '24px', fontFamily: 'monospace' }}>
                     +{15 + (quizScore === questions.length ? 25 : quizScore > 0 ? 10 : 0)} نقطة
                   </p>
-                  <p style={{ color:'#7090a8', fontSize:'13px', marginTop:'4px' }}>
+                  <p style={{ color: '#7090a8', fontSize: '13px', marginTop: '4px' }}>
                     15 للدرس {quizScore === questions.length ? '+ 25 مكافأة الاختبار الكامل! 🏆' : quizScore > 0 ? '+ 10 لإجابات صحيحة' : ''}
                   </p>
                 </div>
-                <button onClick={finishQuiz} style={{ width:'100%', padding:'16px', background:course.color, color:'#050a0f', border:'none', borderRadius:'8px', fontFamily:'Cairo,sans-serif', fontSize:'16px', fontWeight:'900', cursor:'pointer' }}>
+                <button onClick={finishQuiz} style={{ width: '100%', padding: '16px', background: course.color, color: '#050a0f', border: 'none', borderRadius: '8px', fontFamily: 'Cairo,sans-serif', fontSize: '16px', fontWeight: '900', cursor: 'pointer' }}>
                   احفظ النتيجة وتابع →
                 </button>
               </div>
@@ -247,54 +314,51 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
         </div>
       )}
 
-      <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         {/* Navbar */}
-        <nav style={{ background:'rgba(5,10,15,0.95)', borderBottom:'1px solid #1a3a50', padding:'0 32px', height:'60px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, backdropFilter:'blur(20px)' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'24px' }}>
-            <button onClick={() => router.push('/dashboard')} style={{ background:'#0a1520', border:'1px solid #1a3a50', color:'#7090a8', padding:'8px 16px', borderRadius:'6px', fontFamily:'Cairo,sans-serif', cursor:'pointer', fontSize:'14px', transition:'all 0.2s' }}
+        <nav style={{ background: 'rgba(5,10,15,0.95)', borderBottom: '1px solid #1a3a50', padding: '0 32px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(20px)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <button onClick={() => router.push('/dashboard')}
+              style={{ background: '#0a1520', border: '1px solid #1a3a50', color: '#7090a8', padding: '8px 16px', borderRadius: '6px', fontFamily: 'Cairo,sans-serif', cursor: 'pointer', fontSize: '14px', transition: 'all 0.2s' }}
               onMouseOver={e => (e.currentTarget.style.borderColor = course.color)}
               onMouseOut={e => (e.currentTarget.style.borderColor = '#1a3a50')}>
               ← العودة
             </button>
-            <span style={{ color:course.color, fontFamily:'monospace', fontWeight:'700', fontSize:'15px' }}>{course.icon} {course.title}</span>
+            <span style={{ color: course.color, fontFamily: 'monospace', fontWeight: '700', fontSize: '15px' }}>{course.icon} {course.title}</span>
           </div>
-          <div style={{ display:'flex', alignItems:'center', gap:'16px' }}>
-            <div style={{ background:'#0a1520', border:'1px solid #1a3a50', borderRadius:'100px', padding:'6px 16px', display:'flex', alignItems:'center', gap:'8px' }}>
-              <span style={{ color:'#ffd700' }}>⭐</span>
-              <span style={{ fontFamily:'monospace', fontWeight:'700', color:'white' }}>{points}</span>
-              <span style={{ color:'#7090a8', fontSize:'13px' }}>نقطة</span>
-            </div>
+          <div style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '100px', padding: '6px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ color: '#ffd700' }}>⭐</span>
+            <span style={{ fontFamily: 'monospace', fontWeight: '700', color: 'white' }}>{points}</span>
+            <span style={{ color: '#7090a8', fontSize: '13px' }}>نقطة</span>
           </div>
         </nav>
 
-        <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           {/* Sidebar */}
-          <div style={{ width:'280px', background:'#080f18', borderLeft:'1px solid #1a3a50', overflowY:'auto', flexShrink:0, display:'flex', flexDirection:'column' }}>
-            {/* Progress */}
-            <div style={{ padding:'20px', borderBottom:'1px solid #1a3a50' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'10px' }}>
-                <span style={{ color:'#7090a8', fontSize:'13px', fontFamily:'monospace' }}>التقدم</span>
-                <span style={{ color:course.color, fontSize:'13px', fontFamily:'monospace', fontWeight:'700' }}>{doneCount}/{totalLessons}</span>
+          <div style={{ width: '280px', background: '#080f18', borderLeft: '1px solid #1a3a50', overflowY: 'auto', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '20px', borderBottom: '1px solid #1a3a50' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <span style={{ color: '#7090a8', fontSize: '13px', fontFamily: 'monospace' }}>التقدم</span>
+                <span style={{ color: course.color, fontSize: '13px', fontFamily: 'monospace', fontWeight: '700' }}>{doneCount}/{totalLessons}</span>
               </div>
-              <div style={{ background:'#0f1f30', borderRadius:'2px', height:'6px' }}>
-                <div style={{ background:course.color, height:'6px', borderRadius:'2px', width:`${percent}%`, transition:'width 0.5s', boxShadow:`0 0 8px ${course.color}66` }}></div>
+              <div style={{ background: '#0f1f30', borderRadius: '2px', height: '6px' }}>
+                <div style={{ background: course.color, height: '6px', borderRadius: '2px', width: `${percent}%`, transition: 'width 0.5s', boxShadow: `0 0 8px ${course.color}66` }}></div>
               </div>
-              <p style={{ color:'#7090a8', fontSize:'12px', marginTop:'8px', fontFamily:'monospace' }}>{percent}% مكتمل</p>
+              <p style={{ color: '#7090a8', fontSize: '12px', marginTop: '8px', fontFamily: 'monospace' }}>{percent}% مكتمل</p>
             </div>
-            {/* Lessons List */}
-            <div style={{ padding:'12px', flex:1 }}>
+            <div style={{ padding: '12px', flex: 1 }}>
               {lessons.map((lesson, i) => {
                 const isDone = completed.has(lesson.id)
                 const isCurrent = currentLesson?.id === lesson.id
                 return (
                   <button key={lesson.id} onClick={() => { setCurrentLesson(lesson); setShowQuiz(false) }}
-                    style={{ width:'100%', textAlign:'right', padding:'12px 14px', borderRadius:'8px', border:`1px solid ${isCurrent ? course.color + '66' : '#1a3a50'}`, background: isCurrent ? course.color + '11' : 'transparent', color: isCurrent ? 'white' : '#7090a8', fontFamily:'Cairo,sans-serif', fontSize:'14px', cursor:'pointer', marginBottom:'6px', display:'flex', alignItems:'center', gap:'10px', transition:'all 0.2s' }}
+                    style={{ width: '100%', textAlign: 'right', padding: '12px 14px', borderRadius: '8px', border: `1px solid ${isCurrent ? course.color + '66' : '#1a3a50'}`, background: isCurrent ? course.color + '11' : 'transparent', color: isCurrent ? 'white' : '#7090a8', fontFamily: 'Cairo,sans-serif', fontSize: '14px', cursor: 'pointer', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s' }}
                     onMouseOver={e => { if (!isCurrent) e.currentTarget.style.borderColor = course.color + '44' }}
                     onMouseOut={e => { if (!isCurrent) e.currentTarget.style.borderColor = '#1a3a50' }}>
-                    <span style={{ fontFamily:'monospace', fontSize:'12px', color: isDone ? '#00ff88' : isCurrent ? course.color : '#1a3a50', minWidth:'20px' }}>
-                      {isDone ? '✓' : String(i+1).padStart(2,'0')}
+                    <span style={{ fontFamily: 'monospace', fontSize: '12px', color: isDone ? '#00ff88' : isCurrent ? course.color : '#1a3a50', minWidth: '20px' }}>
+                      {isDone ? '✓' : String(i + 1).padStart(2, '0')}
                     </span>
-                    <span style={{ flex:1, textAlign:'right' }}>{lesson.title}</span>
+                    <span style={{ flex: 1, textAlign: 'right' }}>{lesson.title}</span>
                   </button>
                 )
               })}
@@ -302,41 +366,36 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
           </div>
 
           {/* Main Content */}
-          <div style={{ flex:1, overflowY:'auto', background:'#050a0f' }}>
+          <div style={{ flex: 1, overflowY: 'auto', background: '#050a0f' }}>
             {currentLesson && (
-              <div className="lesson-content" style={{ maxWidth:'820px', margin:'0 auto', padding:'48px 40px' }}>
-                {/* Lesson Header */}
-                <div style={{ marginBottom:'32px', paddingBottom:'24px', borderBottom:'1px solid #1a3a50' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'12px' }}>
-                    <span style={{ fontFamily:'monospace', color:'#1a3a50', fontSize:'13px' }}>
-                      {String(lessons.findIndex(l => l.id === currentLesson.id) + 1).padStart(2,'0')} / {String(totalLessons).padStart(2,'0')}
+              <div className="lesson-content" style={{ maxWidth: '820px', margin: '0 auto', padding: '48px 40px' }}>
+                <div style={{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid #1a3a50' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                    <span style={{ fontFamily: 'monospace', color: '#1a3a50', fontSize: '13px' }}>
+                      {String(lessons.findIndex(l => l.id === currentLesson.id) + 1).padStart(2, '0')} / {String(totalLessons).padStart(2, '0')}
                     </span>
                     {completed.has(currentLesson.id) && (
-                      <span style={{ background:'rgba(0,255,136,0.1)', border:'1px solid #00ff8866', color:'#00ff88', padding:'2px 10px', borderRadius:'100px', fontSize:'12px', fontFamily:'monospace' }}>✓ مكتمل</span>
+                      <span style={{ background: 'rgba(0,255,136,0.1)', border: '1px solid #00ff8866', color: '#00ff88', padding: '2px 10px', borderRadius: '100px', fontSize: '12px', fontFamily: 'monospace' }}>✓ مكتمل</span>
                     )}
                   </div>
-                  <h1 style={{ fontSize:'32px', fontWeight:'900', color:'white', lineHeight:'1.3' }}>{currentLesson.title}</h1>
+                  <h1 style={{ fontSize: '32px', fontWeight: '900', color: 'white', lineHeight: '1.3' }}>{currentLesson.title}</h1>
                 </div>
 
-                {/* Content */}
-                <div style={{ lineHeight:'2', color:'#a0c0d8', fontSize:'16px' }}
+                <div style={{ lineHeight: '2', color: '#a0c0d8', fontSize: '16px' }}
                   dangerouslySetInnerHTML={{ __html: renderContent(currentLesson.content) }} />
 
-                {/* Action */}
-                <div style={{ marginTop:'48px', paddingTop:'32px', borderTop:'1px solid #1a3a50', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <div style={{ marginTop: '48px', paddingTop: '32px', borderTop: '1px solid #1a3a50', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   {completed.has(currentLesson.id) ? (
-                    <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-                      <span style={{ color:'#00ff88', fontWeight:'700', fontFamily:'monospace' }}>✓ تم إتمام هذا الدرس</span>
-                    </div>
+                    <span style={{ color: '#00ff88', fontWeight: '700', fontFamily: 'monospace' }}>✓ تم إتمام هذا الدرس</span>
                   ) : (
                     <button onClick={startQuiz}
-                      style={{ background:course.color, color:'#050a0f', padding:'14px 32px', border:'none', borderRadius:'8px', fontFamily:'Cairo,sans-serif', fontSize:'16px', fontWeight:'900', cursor:'pointer', display:'flex', alignItems:'center', gap:'10px', boxShadow:`0 0 24px ${course.color}44` }}>
-                      ⚡ ابدأ الاختبار <span style={{ opacity:0.7 }}>(+15 نقطة)</span>
+                      style={{ background: course.color, color: '#050a0f', padding: '14px 32px', border: 'none', borderRadius: '8px', fontFamily: 'Cairo,sans-serif', fontSize: '16px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: `0 0 24px ${course.color}44` }}>
+                      ⚡ ابدأ الاختبار <span style={{ opacity: 0.7 }}>(+15 نقطة)</span>
                     </button>
                   )}
                   {completed.has(currentLesson.id) && lessons.findIndex(l => l.id === currentLesson.id) < lessons.length - 1 && (
                     <button onClick={() => setCurrentLesson(lessons[lessons.findIndex(l => l.id === currentLesson.id) + 1])}
-                      style={{ background:'#0a1520', color:course.color, padding:'14px 28px', border:`1px solid ${course.color}66`, borderRadius:'8px', fontFamily:'Cairo,sans-serif', fontSize:'15px', fontWeight:'700', cursor:'pointer' }}>
+                      style={{ background: '#0a1520', color: course.color, padding: '14px 28px', border: `1px solid ${course.color}66`, borderRadius: '8px', fontFamily: 'Cairo,sans-serif', fontSize: '15px', fontWeight: '700', cursor: 'pointer' }}>
                       الدرس التالي ←
                     </button>
                   )}
