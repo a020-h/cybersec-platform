@@ -21,6 +21,7 @@ const getLevel = (points: number) => {
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [points, setPoints] = useState(0)
   const [lessonsCompleted, setLessonsCompleted] = useState(0)
   const [courseProgress, setCourseProgress] = useState<Record<number, number>>({})
@@ -38,8 +39,11 @@ export default function Dashboard() {
   }, [])
 
   const loadStats = async (userId: string) => {
-    const { data: profile } = await supabase.from('profiles').select('points').eq('id', userId).single()
-    if (profile) setPoints(profile.points)
+    const { data: profile } = await supabase.from('profiles').select('points, is_admin').eq('id', userId).single()
+    if (profile) {
+      setPoints(profile.points)
+      setIsAdmin(profile.is_admin || false)
+    }
     const { data: completions } = await supabase.from('lesson_completions').select('course_id, lesson_id').eq('user_id', userId)
     if (completions) {
       setLessonsCompleted(completions.length)
@@ -75,7 +79,7 @@ export default function Dashboard() {
         ::-webkit-scrollbar-track { background:#0a1520; }
         ::-webkit-scrollbar-thumb { background:#1a3a50; border-radius:3px; }
         @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale:0.8)} }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
         @keyframes spin { to{transform:rotate(360deg)} }
         .fade-up { animation:fadeUp 0.5s cubic-bezier(0.4,0,0.2,1) both; }
         .stat-card { transition:all 0.3s; }
@@ -88,7 +92,6 @@ export default function Dashboard() {
         .nav-btn { transition: all 0.2s; }
         .nav-btn:hover { opacity: 0.85; transform: translateY(-1px); }
 
-        /* ===== MOBILE RESPONSIVE ===== */
         @media (max-width: 768px) {
           .desktop-nav-items { display: none !important; }
           .mobile-menu-btn { display: flex !important; }
@@ -133,11 +136,19 @@ export default function Dashboard() {
               <span style={{ fontFamily: 'monospace', fontWeight: '700', color: 'white', fontSize: '14px' }}>{points}</span>
             </div>
 
-            {/* 🏆 زر المتصدرون - Desktop */}
+            {/* 🏆 المتصدرون */}
             <button className="nav-btn" onClick={() => router.push('/dashboard/leaderboard')}
               style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.35)', color: '#ffd700', padding: '6px 14px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>
               🏆 المتصدرون
             </button>
+
+            {/* 🛡️ Admin — يظهر فقط للـ Admin */}
+            {isAdmin && (
+              <button className="nav-btn" onClick={() => router.push('/dashboard/admin')}
+                style={{ background: 'rgba(255,51,102,0.12)', border: '1px solid rgba(255,51,102,0.4)', color: '#ff3366', padding: '6px 14px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>
+                🛡️ Admin
+              </button>
+            )}
 
             <button className="nav-btn" onClick={() => router.push('/dashboard/ctf')}
               style={{ background: '#0a1520', border: '1px solid #ff6b3544', color: '#ff6b35', padding: '6px 14px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer' }}>
@@ -168,11 +179,19 @@ export default function Dashboard() {
           {/* ===== Mobile dropdown ===== */}
           {menuOpen && (
             <div className="mobile-menu-dropdown">
-              {/* 🏆 زر المتصدرون - Mobile */}
               <button onClick={() => { router.push('/dashboard/leaderboard'); setMenuOpen(false) }}
                 style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.35)', color: '#ffd700', padding: '12px', borderRadius: '8px', fontFamily: 'Cairo,sans-serif', fontSize: '14px', cursor: 'pointer', textAlign: 'right', fontWeight: '700' }}>
                 🏆 المتصدرون
               </button>
+
+              {/* 🛡️ Admin في الموبايل — يظهر فقط للـ Admin */}
+              {isAdmin && (
+                <button onClick={() => { router.push('/dashboard/admin'); setMenuOpen(false) }}
+                  style={{ background: 'rgba(255,51,102,0.12)', border: '1px solid rgba(255,51,102,0.4)', color: '#ff3366', padding: '12px', borderRadius: '8px', fontFamily: 'Cairo,sans-serif', fontSize: '14px', cursor: 'pointer', textAlign: 'right', fontWeight: '700' }}>
+                  🛡️ لوحة Admin
+                </button>
+              )}
+
               <button onClick={() => { router.push('/dashboard/ctf'); setMenuOpen(false) }}
                 style={{ background: '#0d1b2e', border: '1px solid #ff6b3544', color: '#ff6b35', padding: '12px', borderRadius: '8px', fontFamily: 'Cairo,sans-serif', fontSize: '14px', cursor: 'pointer', textAlign: 'right' }}>
                 🎯 تحديات CTF
@@ -197,6 +216,7 @@ export default function Dashboard() {
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '100px', padding: '4px 14px', marginBottom: '12px' }}>
                   <span style={{ animation: 'pulse 2s infinite', color: '#00ff88', fontSize: '10px' }}>●</span>
                   <span style={{ color: '#7090a8', fontSize: '12px', fontFamily: 'monospace' }}>نشط الآن</span>
+                  {isAdmin && <span style={{ background: 'rgba(255,51,102,0.15)', border: '1px solid #ff336633', color: '#ff3366', padding: '1px 8px', borderRadius: '100px', fontSize: '10px', fontFamily: 'monospace' }}>ADMIN</span>}
                 </div>
                 <h1 className="hero-title" style={{ fontSize: '28px', fontWeight: '900', color: 'white', marginBottom: '6px' }}>
                   أهلاً، <span style={{ color: '#00ff88' }}>{username}</span> 👋
