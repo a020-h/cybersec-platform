@@ -110,6 +110,12 @@ export default function Dashboard() {
               <span style={{ fontFamily: 'monospace', fontWeight: '700', color: 'white' }}>{points}</span>
               <span style={{ color: '#7090a8', fontSize: '13px' }}>نقطة</span>
             </div>
+            <button onClick={() => router.push('/dashboard/ctf')}
+              style={{ background: '#0a1520', border: '1px solid #ff6b3544', color: '#ff6b35', padding: '6px 16px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#ff6b35'; e.currentTarget.style.background = '#ff6b3520' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#ff6b3544'; e.currentTarget.style.background = '#0a1520' }}>
+              🎯 تحديات CTF
+            </button>
             <button onClick={() => router.push('/dashboard/profile')}
               style={{ background: '#0a1520', border: '1px solid #1a3a50', color: '#7090a8', padding: '6px 16px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '6px' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = '#00ff8866'; e.currentTarget.style.color = '#00ff88' }}
