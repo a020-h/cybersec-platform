@@ -109,12 +109,23 @@ export default function ProfilePage() {
         .back-btn:hover { border-color:#00ff88 !important; color:#00ff88 !important; }
         .save-btn { transition:all 0.2s; }
         .save-btn:hover { opacity:0.85; transform:translateY(-1px); }
+        @media (max-width: 768px) {
+          .profile-nav { padding: 0 16px !important; }
+          .profile-main { padding: 20px 16px !important; }
+          .profile-header { padding: 24px 16px !important; }
+          .profile-header-inner { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
+          .points-badge { width: 100% !important; text-align: center !important; }
+          .stats-grid-4 { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
+          .two-col { grid-template-columns: 1fr !important; }
+          .avatar-grid { grid-template-columns: repeat(4,1fr) !important; }
+          .profile-title { font-size: 20px !important; }
+        }
       `}</style>
 
       <div style={{ minHeight: '100vh', position: 'relative', zIndex: 1 }} dir="rtl">
 
         {/* Navbar */}
-        <nav style={{ background: 'rgba(5,10,15,0.95)', borderBottom: '1px solid #1a3a50', padding: '0 40px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(20px)' }}>
+        <nav className="profile-nav" style={{ background: 'rgba(5,10,15,0.95)', borderBottom: '1px solid #1a3a50', padding: '0 40px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(20px)' }}>
           <span style={{ fontFamily: 'monospace', fontSize: '20px', fontWeight: '700', color: '#00ff88', letterSpacing: '2px' }}>🔐 CYBER<span style={{ color: '#7090a8' }}>عربي</span></span>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="back-btn" onClick={() => router.push('/dashboard')}
@@ -128,14 +139,14 @@ export default function ProfilePage() {
           </div>
         </nav>
 
-        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px' }}>
+        <div className="profile-main" style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px' }}>
 
           {/* Profile Header */}
-          <div className="fade-up" style={{ background: 'linear-gradient(135deg,#0a1520,#080f18)', border: '1px solid #1a3a50', borderRadius: '20px', padding: '40px', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
+          <div className="fade-up profile-header" style={{ background: 'linear-gradient(135deg,#0a1520,#080f18)', border: '1px solid #1a3a50', borderRadius: '20px', padding: '40px', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '-40px', left: '-40px', width: '200px', height: '200px', background: '#00ff8808', borderRadius: '50%' }}></div>
             <div style={{ position: 'absolute', bottom: '-60px', right: '-20px', width: '160px', height: '160px', background: '#00d4ff06', borderRadius: '50%' }}></div>
 
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '32px', flexWrap: 'wrap' }}>
+            <div className="profile-header-inner" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '32px', flexWrap: 'wrap' }}>
               {/* Avatar */}
               <div style={{ position: 'relative' }}>
                 <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'linear-gradient(135deg,#0f2a1a,#0a1520)', border: `3px solid ${level.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px', boxShadow: `0 0 30px ${level.color}33`, animation: 'glow 3s ease-in-out infinite' }}>
@@ -194,7 +205,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Points Badge */}
-              <div style={{ background: '#0f1f30', border: '1px solid #ffd70044', borderRadius: '16px', padding: '20px 28px', textAlign: 'center' }}>
+              <div className="points-badge" style={{ background: '#0f1f30', border: '1px solid #ffd70044', borderRadius: '16px', padding: '20px 28px', textAlign: 'center' }}>
                 <p style={{ color: '#ffd700', fontFamily: 'monospace', fontSize: '36px', fontWeight: '900', lineHeight: '1' }}>{points}</p>
                 <p style={{ color: '#7090a8', fontSize: '13px', marginTop: '6px' }}>نقطة مكتسبة</p>
               </div>
@@ -204,7 +215,7 @@ export default function ProfilePage() {
           {/* Avatar Picker */}
           <div className="fade-up" style={{ animationDelay: '0.1s', background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '16px', padding: '24px', marginBottom: '24px' }}>
             <h3 style={{ color: '#00ff88', fontFamily: 'monospace', fontSize: '14px', marginBottom: '16px' }}>// اختر أفاتار</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8,1fr)', gap: '10px' }}>
+            <div className="avatar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(8,1fr)', gap: '10px' }}>
               {avatars.map((av, i) => (
                 <div key={i} className={`avatar-opt ${selectedAvatar === i ? 'selected' : ''}`}
                   onClick={() => setSelectedAvatar(i)}>
@@ -215,7 +226,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Stats Grid */}
-          <div className="fade-up" style={{ animationDelay: '0.15s', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px', marginBottom: '24px' }}>
+          <div className="fade-up stats-grid-4" style={{ animationDelay: '0.15s', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px', marginBottom: '24px' }}>
             {[
               { label: 'النقاط', value: points, color: '#ffd700', icon: '⭐' },
               { label: 'دروس مكتملة', value: lessonsCompleted, color: '#00ff88', icon: '📚' },
@@ -231,7 +242,7 @@ export default function ProfilePage() {
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
 
             {/* Course Progress */}
             <div className="fade-up" style={{ animationDelay: '0.2s', background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '16px', padding: '24px' }}>
