@@ -75,7 +75,7 @@ export default function Dashboard() {
         ::-webkit-scrollbar-track { background:#0a1520; }
         ::-webkit-scrollbar-thumb { background:#1a3a50; border-radius:3px; }
         @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale:0.8)} }
         @keyframes spin { to{transform:rotate(360deg)} }
         .fade-up { animation:fadeUp 0.5s cubic-bezier(0.4,0,0.2,1) both; }
         .stat-card { transition:all 0.3s; }
@@ -85,6 +85,8 @@ export default function Dashboard() {
         .tab-btn { transition:all 0.25s; }
         .badge-card { transition:all 0.3s; }
         .mobile-menu { display:none; }
+        .nav-btn { transition: all 0.2s; }
+        .nav-btn:hover { opacity: 0.85; transform: translateY(-1px); }
 
         /* ===== MOBILE RESPONSIVE ===== */
         @media (max-width: 768px) {
@@ -124,27 +126,34 @@ export default function Dashboard() {
             🔐 CYBER<span style={{ color: '#7090a8' }}>عربي</span>
           </span>
 
-          {/* Desktop nav */}
+          {/* ===== Desktop nav ===== */}
           <div className="desktop-nav-items" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '100px', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ color: '#ffd700' }}>⭐</span>
               <span style={{ fontFamily: 'monospace', fontWeight: '700', color: 'white', fontSize: '14px' }}>{points}</span>
             </div>
-            <button onClick={() => router.push('/dashboard/ctf')}
+
+            {/* 🏆 زر المتصدرون - Desktop */}
+            <button className="nav-btn" onClick={() => router.push('/dashboard/leaderboard')}
+              style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.35)', color: '#ffd700', padding: '6px 14px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer', fontWeight: '700' }}>
+              🏆 المتصدرون
+            </button>
+
+            <button className="nav-btn" onClick={() => router.push('/dashboard/ctf')}
               style={{ background: '#0a1520', border: '1px solid #ff6b3544', color: '#ff6b35', padding: '6px 14px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer' }}>
               🎯 CTF
             </button>
-            <button onClick={() => router.push('/dashboard/profile')}
+            <button className="nav-btn" onClick={() => router.push('/dashboard/profile')}
               style={{ background: '#0a1520', border: '1px solid #1a3a50', color: '#7090a8', padding: '6px 14px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer' }}>
               👤 {username}
             </button>
-            <button onClick={() => supabase.auth.signOut().then(() => router.push('/'))}
+            <button className="nav-btn" onClick={() => supabase.auth.signOut().then(() => router.push('/'))}
               style={{ background: 'rgba(255,51,102,0.1)', border: '1px solid rgba(255,51,102,0.3)', color: '#ff3366', padding: '6px 14px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer' }}>
               خروج
             </button>
           </div>
 
-          {/* Mobile menu button */}
+          {/* ===== Mobile menu button ===== */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className="mobile-menu-btn">
             <div style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '100px', padding: '5px 12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
               <span style={{ color: '#ffd700', fontSize: '13px' }}>⭐</span>
@@ -156,9 +165,14 @@ export default function Dashboard() {
             </button>
           </div>
 
-          {/* Mobile dropdown */}
+          {/* ===== Mobile dropdown ===== */}
           {menuOpen && (
             <div className="mobile-menu-dropdown">
+              {/* 🏆 زر المتصدرون - Mobile */}
+              <button onClick={() => { router.push('/dashboard/leaderboard'); setMenuOpen(false) }}
+                style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.35)', color: '#ffd700', padding: '12px', borderRadius: '8px', fontFamily: 'Cairo,sans-serif', fontSize: '14px', cursor: 'pointer', textAlign: 'right', fontWeight: '700' }}>
+                🏆 المتصدرون
+              </button>
               <button onClick={() => { router.push('/dashboard/ctf'); setMenuOpen(false) }}
                 style={{ background: '#0d1b2e', border: '1px solid #ff6b3544', color: '#ff6b35', padding: '12px', borderRadius: '8px', fontFamily: 'Cairo,sans-serif', fontSize: '14px', cursor: 'pointer', textAlign: 'right' }}>
                 🎯 تحديات CTF
