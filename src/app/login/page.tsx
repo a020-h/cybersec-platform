@@ -17,7 +17,6 @@ export default function LoginPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
-    // Check if already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) router.push('/dashboard')
       else setTimeout(() => setVisible(true), 80)
@@ -35,7 +34,7 @@ export default function LoginPage() {
     window.addEventListener('resize', resize)
     const cols = Math.floor(canvas.width / 24)
     const drops: number[] = Array(cols).fill(1)
-    const chars = 'アイウエオ01ABCDEF0123456789!@#'
+    const chars = '01ABCDEF0123456789!@#$%^&*'
     const draw = () => {
       ctx.fillStyle = 'rgba(5,10,15,0.07)'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -54,8 +53,11 @@ export default function LoginPage() {
 
   const handleSubmit = async () => {
     setError(''); setSuccess('')
+
+    // Validation
     if (!email || !password) { setError('يرجى ملء جميع الحقول'); return }
-    if (mode === 'register' && !username) { setError('يرجى إدخال اسم المستخدم'); return }
+    if (mode === 'register' && !username.trim()) { setError('يرجى إدخال اسم المستخدم'); return }
+    if (mode === 'register' && username.trim().length < 3) { setError('اسم المستخدم يجب أن يكون 3 أحرف على الأقل'); return }
     if (password.length < 6) { setError('كلمة المرور يجب أن تكون 6 أحرف على الأقل'); return }
 
     setLoading(true)
@@ -68,24 +70,34 @@ export default function LoginPage() {
         } else {
           router.push('/dashboard')
         }
+
       } else {
+        // ===== REGISTER =====
         const { data, error: err } = await supabase.auth.signUp({ email, password })
+
         if (err) {
           if (err.message.includes('already registered')) setError('هذا البريد الإلكتروني مسجل مسبقاً')
-          else setError('حدث خطأ في التسجيل')
+          else setError('حدث خطأ في التسجيل: ' + err.message)
+
         } else if (data.user) {
-          // Create profile
-          await supabase.from('profiles').upsert({
+          // ✅ حفظ username و avatar في profiles
+          const { error: profileErr } = await supabase.from('profiles').upsert({
             id: data.user.id,
-            username: username,
+            username: username.trim(),
             points: 0,
-            avatar: '🧑‍💻'
-          })
-          setSuccess('تم التسجيل بنجاح! جارٍ التحويل...')
+            avatar: '🧑‍💻',
+          }, { onConflict: 'id' })
+
+          if (profileErr) {
+            console.error('Profile save error:', profileErr)
+            // نكمل حتى لو فيه خطأ في الـ profile
+          }
+
+          setSuccess('تم التسجيل بنجاح! جاري التحويل...')
           setTimeout(() => router.push('/dashboard'), 1500)
         }
       }
-    } catch {
+    } catch (e) {
       setError('حدث خطأ غير متوقع')
     }
     setLoading(false)
@@ -106,19 +118,18 @@ export default function LoginPage() {
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
         @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(0,255,136,0.1)}50%{box-shadow:0 0 40px rgba(0,255,136,0.25)}}
         @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
-        @keyframes slideTab{from{width:0}to{width:50%}}
         .fade-up{animation:fadeUp 0.6s cubic-bezier(0.4,0,0.2,1) both;}
         .card-glow{animation:glow 3s ease-in-out infinite;}
         .shake{animation:shake 0.35s ease-in-out;}
         .input-field{
           width:100%;background:#0a1520;border:1px solid #1a3a50;border-radius:10px;
-          padding:13px 16px 13px 44px;color:#e0f0ff;font-family:'Cairo',sans-serif;
+          padding:13px 44px 13px 16px;color:#e0f0ff;font-family:'Cairo',sans-serif;
           font-size:15px;outline:none;transition:all 0.25s;direction:rtl;
         }
         .input-field:focus{border-color:#00ff8866;background:#0d1e2e;box-shadow:0 0 0 3px rgba(0,255,136,0.08);}
         .input-field::placeholder{color:#3a5a70;}
         .input-wrap{position:relative;margin-bottom:16px;}
-        .input-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none;}
+        .input-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none;z-index:1;}
         .submit-btn{
           width:100%;background:#00ff88;color:#050a0f;border:none;border-radius:10px;
           padding:14px;font-family:'Cairo',sans-serif;font-size:16px;font-weight:900;
@@ -142,7 +153,6 @@ export default function LoginPage() {
           transition:color 0.2s;padding:0;
         }
         .back-btn:hover{color:#00ff88;}
-
         @media(max-width:480px){
           .auth-card{padding:28px 20px !important;margin:0 16px !important;}
           .auth-title{font-size:22px !important;}
@@ -210,7 +220,7 @@ export default function LoginPage() {
                 <span className="input-icon">👤</span>
                 <input
                   className="input-field"
-                  placeholder="اسم المستخدم"
+                  placeholder="اسم المستخدم (يظهر في المتصدرين)"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   onKeyDown={handleKey}
@@ -238,7 +248,7 @@ export default function LoginPage() {
               <input
                 className="input-field"
                 type={showPass ? 'text' : 'password'}
-                placeholder="كلمة المرور"
+                placeholder="كلمة المرور (6 أحرف على الأقل)"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 onKeyDown={handleKey}
@@ -268,7 +278,7 @@ export default function LoginPage() {
             {loading ? (
               <span style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'10px' }}>
                 <span style={{ width:'16px', height:'16px', border:'2px solid #050a0f', borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.7s linear infinite', display:'inline-block' }}></span>
-                جارٍ التحميل...
+                جاري التحميل...
               </span>
             ) : mode === 'login' ? '🔓 تسجيل الدخول' : '🚀 إنشاء الحساب'}
           </button>
@@ -293,7 +303,7 @@ export default function LoginPage() {
 
         {/* Security badges */}
         <div className="fade-up" style={{ animationDelay:'0.3s', display:'flex', gap:'16px', marginTop:'20px', flexWrap:'wrap', justifyContent:'center' }}>
-          {['🔒 اتصال آمن SSL', '🛡️ بياناتك محمية', '🆓 مجاني 100%'].map((b,i) => (
+          {['🔒 اتصال آمن SSL', '🛡️ بياناتك محمية', '🎓 مجاني 100%'].map((b,i) => (
             <span key={i} style={{ color:'#3a5a70', fontSize:'11px', fontFamily:'monospace', display:'flex', alignItems:'center', gap:'4px' }}>{b}</span>
           ))}
         </div>
