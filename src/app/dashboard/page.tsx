@@ -207,6 +207,12 @@ export default function Dashboard() {
             <div style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '100px', padding: '6px 14px', fontSize: '13px', color: '#7090a8' }}>
               {username}
             </div>
+<button onClick={() => router.push('/dashboard/profile')}
+  style={{ background: '#0a1520', border: '1px solid #1a3a50', color: '#7090a8', padding: '6px 16px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}
+  onMouseEnter={e => { e.currentTarget.style.borderColor = '#00ff8866'; e.currentTarget.style.color = '#00ff88' }}
+  onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a3a50'; e.currentTarget.style.color = '#7090a8' }}>
+  👤 ملفي
+</button>
             <button className="logout-btn" onClick={() => supabase.auth.signOut().then(() => router.push('/'))}
               style={{ background: 'rgba(255,51,102,0.1)', border: '1px solid rgba(255,51,102,0.3)', color: '#ff3366', padding: '6px 16px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer' }}>
               خروج
