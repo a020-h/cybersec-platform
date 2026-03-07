@@ -22,7 +22,7 @@ const getLevel = (points: number) => {
 const avatars = ['🧑‍💻', '👨‍💻', '👩‍💻', '🕵️', '🦾', '🤖', '👾', '🎯']
 
 const badgeList = [
-  { icon: '🌱', label: 'المبتدئ', desc: 'أكمل أول درس', color: '#00ff88', check: (l: number, c: number, p: number) => l >= 1 },
+  { icon: '🌱', label: 'المبتدئ', desc: 'أكمل أول درس', color: '#00ff88', check: (l: number) => l >= 1 },
   { icon: '🔥', label: 'متحمس', desc: '5 دروس مكتملة', color: '#ff6b35', check: (l: number) => l >= 5 },
   { icon: '⚡', label: 'سريع', desc: 'أكمل مسار كامل', color: '#a855f7', check: (_l: number, c: number) => c >= 1 },
   { icon: '🏆', label: 'بطل', desc: '200+ نقطة', color: '#ffd700', check: (_l: number, _c: number, p: number) => p >= 200 },
@@ -41,31 +41,90 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState('')
   const [tempName, setTempName] = useState('')
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const router = useRouter()
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { router.push('/'); return }
       setUser(session.user)
-      const name = session.user.email?.split('@')[0] || 'مستخدم'
-      setDisplayName(name); setTempName(name)
-      const { data: profile } = await supabase.from('profiles').select('points').eq('id', session.user.id).single()
-      if (profile) setPoints(profile.points)
-      const { data: completions } = await supabase.from('lesson_completions').select('course_id, lesson_id').eq('user_id', session.user.id)
+
+      // ── جلب البروفايل من Supabase ──
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('points, username, avatar')
+        .eq('id', session.user.id)
+        .single()
+
+      if (profile) {
+        setPoints(profile.points || 0)
+        // استخدم username من profiles أولاً، ثم email prefix
+        const name = profile.username || session.user.email?.split('@')[0] || 'مستخدم'
+        setDisplayName(name)
+        setTempName(name)
+        // تعيين الـ avatar المحفوظ لو موجود
+        const savedAvatarIdx = avatars.indexOf(profile.avatar)
+        if (savedAvatarIdx !== -1) setSelectedAvatar(savedAvatarIdx)
+      } else {
+        const name = session.user.email?.split('@')[0] || 'مستخدم'
+        setDisplayName(name)
+        setTempName(name)
+      }
+
+      const { data: completions } = await supabase
+        .from('lesson_completions')
+        .select('course_id, lesson_id')
+        .eq('user_id', session.user.id)
+
       if (completions) {
         setLessonsCompleted(completions.length)
         const progress: Record<number, number> = {}
-        completions.forEach((c: any) => { progress[parseInt(c.course_id)] = (progress[parseInt(c.course_id)] || 0) + 1 })
+        completions.forEach((c: any) => {
+          progress[parseInt(c.course_id)] = (progress[parseInt(c.course_id)] || 0) + 1
+        })
         setCourseProgress(progress)
       }
       setLoading(false)
     })
   }, [])
 
-  const saveName = () => {
-    if (tempName.trim()) setDisplayName(tempName.trim())
-    setEditingName(false); setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  // ✅ الحفظ الحقيقي في Supabase
+  const saveName = async () => {
+    if (!tempName.trim()) return
+    setSaving(true)
+    setSaveError('')
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ username: tempName.trim() })
+      .eq('id', session.user.id)
+
+    if (error) {
+      setSaveError('فشل الحفظ: ' + error.message)
+      setSaving(false)
+      return
+    }
+
+    setDisplayName(tempName.trim())
+    setEditingName(false)
+    setSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  // ✅ حفظ الـ avatar في Supabase
+  const saveAvatar = async (idx: number) => {
+    setSelectedAvatar(idx)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    await supabase
+      .from('profiles')
+      .update({ avatar: avatars[idx] })
+      .eq('id', session.user.id)
   }
 
   if (loading) return (
@@ -85,8 +144,7 @@ export default function ProfilePage() {
   const completedCourses = courses.filter(c => (courseProgress[c.id] || 0) >= c.lessons).length
   const joinDate = user?.created_at ? new Date(user.created_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' }) : ''
   const levelPercent = level.nextPts ? Math.min(100, Math.round((points / level.nextPts) * 100)) : 100
-  const overallPercent = Math.round((lessonsCompleted / totalLessons) * 100)
-
+  const overallPercent = totalLessons > 0 ? Math.round((lessonsCompleted / totalLessons) * 100) : 0
   const badges = badgeList.map(b => ({ ...b, unlocked: b.check(lessonsCompleted, completedCourses, points) }))
   const unlockedCount = badges.filter(b => b.unlocked).length
 
@@ -96,34 +154,28 @@ export default function ProfilePage() {
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Space+Mono:wght@400;700&display=swap');
         *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; list-style:none; }
         body { font-family:'Cairo',sans-serif; background:#050a0f; color:#e0f0ff; overflow-x:hidden; }
-
         .bg-grid { position:fixed; inset:0; z-index:0; pointer-events:none;
           background-image: linear-gradient(rgba(0,255,136,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,136,0.025) 1px, transparent 1px);
           background-size:50px 50px;
           mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, black, transparent); }
         .bg-glow { position:fixed; top:-150px; right:-150px; width:500px; height:500px; background:radial-gradient(circle, rgba(0,255,136,0.05) 0%, transparent 70%); pointer-events:none; z-index:0; }
-
         ::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-track { background:#050a0f; } ::-webkit-scrollbar-thumb { background:#1a3a50; border-radius:10px; }
-
         @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
         @keyframes spin { to{transform:rotate(360deg)} }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
         @keyframes avatarGlow { 0%,100%{box-shadow:0 0 20px rgba(0,255,136,0.2)} 50%{box-shadow:0 0 40px rgba(0,255,136,0.45)} }
-
         .fade-up { animation:fadeUp 0.45s cubic-bezier(0.4,0,0.2,1) both; }
         .avatar-opt { transition:all 0.25s; cursor:pointer; border:2px solid #1a3a50; border-radius:14px; padding:10px; font-size:26px; text-align:center; background:#080f18; }
-        .avatar-opt:hover { border-color:#00ff8866; transform:scale(1.12) translateY(-2px); background:#0a1520; }
+        .avatar-opt:hover { border-color:#00ff8866; transform:scale(1.12) translateY(-2px); }
         .avatar-opt.sel { border-color:#00ff88; background:rgba(0,255,136,0.1); box-shadow:0 0 20px rgba(0,255,136,0.25); }
         .course-row { transition:all 0.25s; border-radius:10px; padding:12px 14px; cursor:pointer; border:1px solid transparent; }
         .course-row:hover { background:rgba(255,255,255,0.03); border-color:#1a3a5066; }
         .stat-box { transition:all 0.3s; position:relative; overflow:hidden; }
         .stat-box:hover { transform:translateY(-4px); }
-        .badge-item { transition:all 0.3s; border-radius:14px; padding:16px 10px; text-align:center; position:relative; overflow:hidden; cursor:default; }
+        .badge-item { transition:all 0.3s; border-radius:14px; padding:16px 10px; text-align:center; position:relative; overflow:hidden; }
         .badge-item.unlocked:hover { transform:translateY(-4px) scale(1.03); }
         .nav-btn { transition:all 0.2s; border-radius:100px; padding:8px 18px; font-family:'Cairo',sans-serif; font-size:13px; cursor:pointer; font-weight:700; border:1px solid; }
         .nav-btn:hover { transform:translateY(-1px); filter:brightness(1.15); }
-
         @media (max-width:768px) {
           .navbar { padding:0 16px !important; }
           .main-wrap { padding:20px 16px !important; }
@@ -161,12 +213,9 @@ export default function ProfilePage() {
 
         <div className="main-wrap" style={{ maxWidth: '1000px', margin: '0 auto', padding: '36px 40px' }}>
 
-          {/* ── PROFILE HERO ── */}
+          {/* HERO */}
           <div className="fade-up" style={{ background: 'linear-gradient(135deg, rgba(10,21,32,0.95), rgba(8,15,24,0.95))', border: `1px solid ${level.color}25`, borderRadius: '22px', padding: '36px 40px', marginBottom: '20px', position: 'relative', overflow: 'hidden' }}>
-            {/* BG orbs */}
             <div style={{ position: 'absolute', top: '-60px', left: '-60px', width: '240px', height: '240px', background: `radial-gradient(circle, ${level.color}10 0%, transparent 70%)`, borderRadius: '50%', pointerEvents: 'none' }}></div>
-            <div style={{ position: 'absolute', bottom: '-40px', right: '-40px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
-            {/* Top accent line */}
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${level.color}60, transparent)` }}></div>
 
             <div className="hero-inner" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '32px', flexWrap: 'wrap' }}>
@@ -185,36 +234,41 @@ export default function ProfilePage() {
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px', flexWrap: 'wrap' }}>
                   {editingName ? (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                       <input value={tempName} onChange={e => setTempName(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && saveName()}
-                        style={{ background: '#0f1f30', border: '1px solid #00ff8855', borderRadius: '10px', padding: '8px 16px', color: 'white', fontFamily: 'Cairo, sans-serif', fontSize: '20px', fontWeight: '700', outline: 'none', width: '200px', transition: 'border-color 0.2s' }}
+                        style={{ background: '#0f1f30', border: '1px solid #00ff8855', borderRadius: '10px', padding: '8px 16px', color: 'white', fontFamily: 'Cairo, sans-serif', fontSize: '20px', fontWeight: '700', outline: 'none', width: '200px' }}
                         autoFocus />
-                      <button onClick={saveName}
-                        style={{ background: '#00ff88', color: '#050a0f', border: 'none', borderRadius: '10px', padding: '8px 18px', fontFamily: 'Cairo, sans-serif', fontWeight: '700', cursor: 'pointer', fontSize: '14px', transition: 'opacity 0.2s' }}>
-                        حفظ
+                      <button onClick={saveName} disabled={saving}
+                        style={{ background: saving ? 'rgba(0,255,136,0.4)' : '#00ff88', color: '#050a0f', border: 'none', borderRadius: '10px', padding: '8px 18px', fontFamily: 'Cairo, sans-serif', fontWeight: '700', cursor: saving ? 'not-allowed' : 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {saving ? (
+                          <><span style={{ width: '12px', height: '12px', border: '2px solid rgba(5,10,15,0.3)', borderTopColor: '#050a0f', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }}></span> جاري...</>
+                        ) : '💾 حفظ'}
                       </button>
-                      <button onClick={() => setEditingName(false)}
+                      <button onClick={() => { setEditingName(false); setTempName(displayName); setSaveError('') }}
                         style={{ background: 'transparent', color: '#7090a8', border: '1px solid #1a3a50', borderRadius: '10px', padding: '8px 14px', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: '14px' }}>
                         إلغاء
                       </button>
+                      {saveError && <span style={{ color: '#ff6b6b', fontSize: '12px', fontFamily: 'monospace' }}>⚠ {saveError}</span>}
                     </div>
                   ) : (
                     <>
-                      <h1 style={{ fontSize: '28px', fontWeight: '900', color: 'white', letterSpacing: '-0.5px' }}>{displayName}</h1>
+                      <h1 style={{ fontSize: '28px', fontWeight: '900', color: 'white' }}>{displayName}</h1>
                       <button onClick={() => setEditingName(true)}
                         style={{ background: 'transparent', border: '1px solid #1a3a50', color: '#7090a8', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', transition: 'all 0.2s' }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = '#00ff8866'; e.currentTarget.style.color = '#00ff88' }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a3a50'; e.currentTarget.style.color = '#7090a8' }}>
                         ✏️ تعديل
                       </button>
-                      {saved && <span style={{ color: '#00ff88', fontSize: '13px', fontFamily: 'monospace', animation: 'fadeUp 0.3s ease' }}>✓ تم الحفظ</span>}
+                      {saved && (
+                        <span style={{ color: '#00ff88', fontSize: '13px', fontFamily: 'monospace', background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.2)', padding: '3px 10px', borderRadius: '8px' }}>
+                          ✓ تم الحفظ في قاعدة البيانات
+                        </span>
+                      )}
                     </>
                   )}
                 </div>
-
                 <p style={{ color: '#7090a8', fontSize: '13px', marginBottom: '14px', fontFamily: 'Space Mono, monospace' }}>{user?.email}</p>
-
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <span style={{ background: `${level.color}18`, border: `1px solid ${level.color}35`, color: level.color, padding: '4px 14px', borderRadius: '100px', fontSize: '13px', fontFamily: 'Space Mono, monospace', fontWeight: '700' }}>
                     {level.icon} {level.label}
@@ -228,7 +282,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Points badge */}
+              {/* Points */}
               <div className="pts-badge" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,215,0,0.05))', border: '1px solid rgba(255,215,0,0.25)', borderRadius: '18px', padding: '22px 32px', textAlign: 'center', flexShrink: 0 }}>
                 <p style={{ color: '#ffd700', fontFamily: 'Space Mono, monospace', fontSize: '40px', fontWeight: '700', lineHeight: '1', textShadow: '0 0 30px rgba(255,215,0,0.4)' }}>{points}</p>
                 <p style={{ color: 'rgba(255,215,0,0.5)', fontSize: '11px', marginTop: '6px', letterSpacing: '1px', fontFamily: 'Space Mono, monospace' }}>POINTS</p>
@@ -236,20 +290,20 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* ── AVATAR PICKER ── */}
+          {/* AVATAR PICKER */}
           <div className="fade-up" style={{ animationDelay: '0.08s', background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '18px', padding: '24px', marginBottom: '20px', backdropFilter: 'blur(10px)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ color: '#00ff88', fontFamily: 'Space Mono, monospace', fontSize: '13px', letterSpacing: '1px' }}>// AVATAR</h3>
-              <span style={{ color: '#1a3a50', fontFamily: 'Space Mono, monospace', fontSize: '11px' }}>اختر شخصيتك</span>
+              <span style={{ color: '#3a5a70', fontFamily: 'Space Mono, monospace', fontSize: '11px' }}>يُحفظ تلقائياً ✓</span>
             </div>
             <div className="avatar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(8,1fr)', gap: '10px' }}>
               {avatars.map((av, i) => (
-                <div key={i} className={`avatar-opt ${selectedAvatar === i ? 'sel' : ''}`} onClick={() => setSelectedAvatar(i)}>{av}</div>
+                <div key={i} className={`avatar-opt ${selectedAvatar === i ? 'sel' : ''}`} onClick={() => saveAvatar(i)}>{av}</div>
               ))}
             </div>
           </div>
 
-          {/* ── STATS ── */}
+          {/* STATS */}
           <div className="fade-up stats-4" style={{ animationDelay: '0.12s', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '20px' }}>
             {[
               { label: 'النقاط', value: points, color: '#ffd700', icon: '⭐', suffix: 'pts' },
@@ -258,11 +312,10 @@ export default function ProfilePage() {
               { label: 'الإنجاز الكلي', value: overallPercent, color: '#a855f7', icon: '📈', suffix: '%' },
             ].map((stat, i) => (
               <div key={i} className="stat-box" style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '14px', padding: '20px 16px', backdropFilter: 'blur(10px)' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = `${stat.color}40`; e.currentTarget.style.boxShadow = `0 8px 32px ${stat.color}15` }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a3a50'; e.currentTarget.style.boxShadow = 'none' }}>
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${stat.color}40`; (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 32px ${stat.color}15` }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#1a3a50'; (e.currentTarget as HTMLElement).style.boxShadow = 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                   <span style={{ fontSize: '20px' }}>{stat.icon}</span>
-                  <span style={{ color: `${stat.color}50`, fontFamily: 'Space Mono, monospace', fontSize: '10px' }}>{['PTS', 'DONE', 'DONE', 'PROG'][i]}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
                   <span style={{ fontFamily: 'Space Mono, monospace', fontSize: '26px', fontWeight: '700', color: stat.color, textShadow: `0 0 20px ${stat.color}40` }}>{stat.value}</span>
@@ -274,7 +327,7 @@ export default function ProfilePage() {
             ))}
           </div>
 
-          {/* ── TWO COLUMNS ── */}
+          {/* TWO COLUMNS */}
           <div className="fade-up two-col" style={{ animationDelay: '0.18s', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px' }}>
 
             {/* Course Progress */}
@@ -287,12 +340,11 @@ export default function ProfilePage() {
                 const done = courseProgress[course.id] || 0
                 const percent = Math.round((done / course.lessons) * 100)
                 return (
-                  <div key={course.id} className="course-row" onClick={() => window.location.href = `/dashboard/course/${course.id}`}
-                    style={{ marginBottom: '10px' }}>
+                  <div key={course.id} className="course-row" onClick={() => router.push(`/dashboard/course/${course.id}`)} style={{ marginBottom: '10px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '7px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontSize: '16px' }}>{course.icon}</span>
-                        <span style={{ color: percent === 100 ? 'white' : '#7090a8', fontSize: '13px', fontWeight: '600', transition: 'color 0.2s' }}>{course.title}</span>
+                        <span style={{ color: percent === 100 ? 'white' : '#7090a8', fontSize: '13px', fontWeight: '600' }}>{course.title}</span>
                       </div>
                       <span style={{ color: course.color, fontSize: '12px', fontFamily: 'Space Mono, monospace', fontWeight: '700' }}>{percent}%</span>
                     </div>
@@ -306,8 +358,6 @@ export default function ProfilePage() {
 
             {/* Badges + Level */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-              {/* Badges */}
               <div style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '18px', padding: '24px', backdropFilter: 'blur(10px)', flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h3 style={{ color: '#00ff88', fontFamily: 'Space Mono, monospace', fontSize: '13px', letterSpacing: '1px' }}>// BADGES</h3>
@@ -332,7 +382,7 @@ export default function ProfilePage() {
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${level.color}60, transparent)` }}></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                   <h3 style={{ color: level.color, fontFamily: 'Space Mono, monospace', fontSize: '13px', letterSpacing: '1px' }}>// LEVEL</h3>
-                  <span style={{ color: level.color, fontFamily: 'Space Mono, monospace', fontSize: '18px', fontWeight: '700', textShadow: `0 0 20px ${level.color}66` }}>{level.icon} {level.label}</span>
+                  <span style={{ color: level.color, fontFamily: 'Space Mono, monospace', fontSize: '18px', fontWeight: '700' }}>{level.icon} {level.label}</span>
                 </div>
                 {level.next ? (
                   <>
@@ -351,7 +401,6 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
-
             </div>
           </div>
         </div>
