@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
-// Password strength checker
 function getPasswordStrength(pw: string): { score: number; label: string; color: string; checks: Record<string, boolean> } {
   const checks = {
     length: pw.length >= 8,
@@ -30,7 +29,6 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(false)
-  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showPass, setShowPass] = useState(false)
@@ -49,7 +47,6 @@ export default function LoginPage() {
     })
   }, [])
 
-  // Matrix rain
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -86,13 +83,11 @@ export default function LoginPage() {
     if (!email.trim()) return 'يرجى إدخال البريد الإلكتروني'
     if (!isValidEmail(email)) return 'صيغة البريد الإلكتروني غير صحيحة'
     if (!password) return 'يرجى إدخال كلمة المرور'
-
     if (mode === 'register') {
       if (!username.trim()) return 'يرجى إدخال اسم المستخدم'
       if (username.trim().length < 3) return 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل'
       if (username.trim().length > 20) return 'اسم المستخدم لا يتجاوز 20 حرفاً'
       if (!/^[a-zA-Z0-9_\u0600-\u06FF]+$/.test(username.trim())) return 'اسم المستخدم يحتوي على أحرف غير مسموح بها'
-
       if (pwStrength.score < 3) return 'كلمة المرور ضعيفة — يجب أن تحتوي على أحرف كبيرة وصغيرة وأرقام ورموز'
       if (!pwStrength.checks.length) return 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'
       if (!pwStrength.checks.uppercase) return 'كلمة المرور يجب أن تحتوي على حرف كبير واحد على الأقل'
@@ -109,7 +104,6 @@ export default function LoginPage() {
     setError(''); setSuccess('')
     const validationError = validateForm()
     if (validationError) { setError(validationError); triggerShake(); return }
-
     setLoading(true)
     try {
       if (mode === 'login') {
@@ -129,7 +123,6 @@ export default function LoginPage() {
           setSuccess('تم تسجيل الدخول بنجاح! جاري التحويل...')
           setTimeout(() => router.push('/dashboard'), 1000)
         }
-
       } else {
         const { data, error: err } = await supabase.auth.signUp({ email: email.trim(), password })
         if (err) {
@@ -157,16 +150,6 @@ export default function LoginPage() {
     setLoading(false)
   }
 
-  const handleGoogleLogin = async () => {
-    setGoogleLoading(true)
-    setError('')
-    const { error: err } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` }
-    })
-    if (err) { setError('فشل تسجيل الدخول بجوجل: ' + err.message); setGoogleLoading(false) }
-  }
-
   const handleKey = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSubmit() }
   const mark = (field: string) => setTouched(t => ({ ...t, [field]: true }))
 
@@ -178,7 +161,7 @@ export default function LoginPage() {
     return ''
   }
 
-  const inp = (hasErr: boolean, hasFocus?: boolean): React.CSSProperties => ({
+  const inp = (hasErr: boolean): React.CSSProperties => ({
     width: '100%',
     background: 'rgba(5,10,15,0.8)',
     border: `1px solid ${hasErr ? 'rgba(255,51,102,0.5)' : '#1a3a50'}`,
@@ -199,39 +182,26 @@ export default function LoginPage() {
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Space+Mono:wght@400;700&display=swap');
         *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Cairo',sans-serif; background:#050a0f; color:#e0f0ff; overflow:hidden; }
-
         @keyframes fadeUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
         @keyframes spin { to{transform:rotate(360deg)} }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
         @keyframes glow { 0%,100%{box-shadow:0 0 30px rgba(0,255,136,0.08)} 50%{box-shadow:0 0 50px rgba(0,255,136,0.18)} }
         @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-9px)} 40%{transform:translateX(9px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
         @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes checkmark { from{stroke-dashoffset:50} to{stroke-dashoffset:0} }
-
         .fade-up { animation:fadeUp 0.55s cubic-bezier(0.4,0,0.2,1) both; }
         .card-glow { animation:glow 3s ease-in-out infinite; }
         .do-shake { animation:shake 0.4s ease-in-out; }
         .slide-down { animation:slideDown 0.25s ease; }
-
         input:focus { border-color: rgba(0,255,136,0.4) !important; background: rgba(10,21,32,0.95) !important; box-shadow: 0 0 0 3px rgba(0,255,136,0.07); }
         input::placeholder { color: #3a5a70; }
-
         .submit-btn { width:100%; border:none; border-radius:12px; padding:14px; font-family:'Cairo',sans-serif; font-size:16px; font-weight:900; cursor:pointer; transition:all 0.3s; }
         .submit-btn:not(:disabled):hover { transform:translateY(-2px); box-shadow:0 12px 35px rgba(0,255,136,0.35); }
         .submit-btn:disabled { opacity:0.55; cursor:not-allowed; }
-
-        .google-btn { width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:13px; font-family:'Cairo',sans-serif; font-size:15px; font-weight:700; cursor:pointer; color:#e0f0ff; display:flex; align-items:center; justify-content:center; gap:10px; transition:all 0.25s; }
-        .google-btn:hover { background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.2); transform:translateY(-1px); }
-        .google-btn:disabled { opacity:0.5; cursor:not-allowed; }
-
         .tab-btn { flex:1; padding:11px; border:none; background:transparent; font-family:'Cairo',sans-serif; font-size:14px; font-weight:700; cursor:pointer; transition:all 0.25s; border-radius:8px; }
         .show-pass { position:absolute; left:13px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#3a5a70; font-size:15px; transition:color 0.2s; padding:4px; }
         .show-pass:hover { color:#00ff88; }
         .check-item { display:flex; align-items:center; gap:7px; font-size:12px; font-family:'Space Mono',monospace; transition:color 0.3s; }
-
         @media(max-width:480px) {
           .auth-card { padding:26px 18px !important; margin:0 12px !important; }
-          .auth-card-wrap { max-height:90vh; overflow-y:auto; }
         }
       `}</style>
 
@@ -243,7 +213,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="fade-up" style={{ marginBottom: '24px', textAlign: 'center' }}>
-          <button onClick={() => router.push('/')} style={{ background: 'none', border: 'none', color: '#7090a8', fontFamily: 'Cairo, sans-serif', fontSize: '13px', cursor: 'pointer', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '5px', transition: 'color 0.2s', margin: '0 auto 10px' }}>
+          <button onClick={() => router.push('/')} style={{ background: 'none', border: 'none', color: '#7090a8', fontFamily: 'Cairo, sans-serif', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', transition: 'color 0.2s', margin: '0 auto 10px' }}>
             ← العودة للرئيسية
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
@@ -258,20 +228,13 @@ export default function LoginPage() {
         <div className={`fade-up card-glow auth-card ${shake ? 'do-shake' : ''}`}
           style={{ animationDelay: '0.1s', background: 'rgba(8,16,28,0.97)', border: '1px solid #1a3a50', borderRadius: '22px', padding: '36px 32px', width: '100%', maxWidth: '440px', backdropFilter: 'blur(24px)', position: 'relative', overflow: 'hidden' }}>
 
-          {/* Top accent */}
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, transparent, rgba(0,255,136,0.5), transparent)' }}></div>
 
           {/* Tabs */}
           <div style={{ display: 'flex', background: 'rgba(5,10,15,0.7)', borderRadius: '12px', padding: '4px', marginBottom: '28px', position: 'relative', border: '1px solid #1a3a5055' }}>
             <div style={{ position: 'absolute', top: '4px', bottom: '4px', borderRadius: '9px', background: 'linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,255,136,0.05))', border: '1px solid rgba(0,255,136,0.25)', transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)', left: mode === 'login' ? '4px' : '50%', right: mode === 'login' ? '50%' : '4px' }} />
-            <button className="tab-btn" onClick={() => { setMode('login'); setError(''); setSuccess(''); setTouched({}) }}
-              style={{ color: mode === 'login' ? '#00ff88' : '#5a7a90', position: 'relative', zIndex: 1 }}>
-              تسجيل الدخول
-            </button>
-            <button className="tab-btn" onClick={() => { setMode('register'); setError(''); setSuccess(''); setTouched({}) }}
-              style={{ color: mode === 'register' ? '#00ff88' : '#5a7a90', position: 'relative', zIndex: 1 }}>
-              حساب جديد
-            </button>
+            <button className="tab-btn" onClick={() => { setMode('login'); setError(''); setSuccess(''); setTouched({}) }} style={{ color: mode === 'login' ? '#00ff88' : '#5a7a90', position: 'relative', zIndex: 1 }}>تسجيل الدخول</button>
+            <button className="tab-btn" onClick={() => { setMode('register'); setError(''); setSuccess(''); setTouched({}) }} style={{ color: mode === 'register' ? '#00ff88' : '#5a7a90', position: 'relative', zIndex: 1 }}>حساب جديد</button>
           </div>
 
           {/* Title */}
@@ -284,32 +247,9 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Google Login */}
-          <button className="google-btn" onClick={handleGoogleLogin} disabled={googleLoading || loading} style={{ marginBottom: '18px' }}>
-            {googleLoading ? (
-              <span style={{ width: '18px', height: '18px', border: '2px solid #7090a8', borderTopColor: '#e0f0ff', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }}></span>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-            )}
-            {googleLoading ? 'جارٍ التحويل...' : 'متابعة بحساب Google'}
-          </button>
-
-          {/* Divider */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
-            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, #1a3a50)' }} />
-            <span style={{ color: '#3a5a70', fontSize: '11px', fontFamily: 'Space Mono, monospace', letterSpacing: '1px' }}>أو بالبريد الإلكتروني</span>
-            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, #1a3a50, transparent)' }} />
-          </div>
-
           {/* Fields */}
           <div key={mode}>
 
-            {/* Username */}
             {mode === 'register' && (
               <div style={{ marginBottom: '14px' }}>
                 <div style={{ position: 'relative' }}>
@@ -324,7 +264,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Email */}
             <div style={{ marginBottom: '14px' }}>
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px', zIndex: 1 }}>📧</span>
@@ -340,7 +279,6 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Password */}
             <div style={{ marginBottom: mode === 'register' ? '8px' : '14px' }}>
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px', zIndex: 1 }}>🔑</span>
@@ -353,10 +291,8 @@ export default function LoginPage() {
                 </button>
               </div>
 
-              {/* Password strength (register only) */}
               {mode === 'register' && password && (
                 <div className="slide-down" style={{ marginTop: '10px' }}>
-                  {/* Strength bar */}
                   <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
                     {[1, 2, 3, 4, 5].map(i => (
                       <div key={i} style={{ flex: 1, height: '3px', borderRadius: '2px', background: i <= pwStrength.score ? pwStrength.color : '#1a3a50', transition: 'all 0.3s', boxShadow: i <= pwStrength.score && pwStrength.score >= 4 ? `0 0 6px ${pwStrength.color}66` : 'none' }} />
@@ -365,14 +301,13 @@ export default function LoginPage() {
                   <p style={{ color: pwStrength.color, fontSize: '11px', fontFamily: 'Space Mono, monospace', marginBottom: '8px' }}>
                     قوة كلمة المرور: {pwStrength.label}
                   </p>
-                  {/* Checks */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
                     {[
-                      { key: 'length',    label: '8 أحرف على الأقل' },
+                      { key: 'length', label: '8 أحرف على الأقل' },
                       { key: 'uppercase', label: 'حرف كبير (A-Z)' },
                       { key: 'lowercase', label: 'حرف صغير (a-z)' },
-                      { key: 'number',    label: 'رقم (0-9)' },
-                      { key: 'symbol',    label: 'رمز (!@#$...)' },
+                      { key: 'number', label: 'رقم (0-9)' },
+                      { key: 'symbol', label: 'رمز (!@#$...)' },
                     ].map(c => (
                       <div key={c.key} className="check-item" style={{ color: pwStrength.checks[c.key as keyof typeof pwStrength.checks] ? '#00ff88' : '#3a5a70' }}>
                         <span style={{ fontSize: '11px' }}>{pwStrength.checks[c.key as keyof typeof pwStrength.checks] ? '✓' : '○'}</span>
@@ -384,7 +319,6 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Confirm Password */}
             {mode === 'register' && (
               <div style={{ marginBottom: '14px', marginTop: '12px' }}>
                 <div style={{ position: 'relative' }}>
@@ -407,7 +341,6 @@ export default function LoginPage() {
             )}
           </div>
 
-          {/* Error / Success */}
           {error && (
             <div className="slide-down" style={{ background: 'rgba(255,51,102,0.08)', border: '1px solid rgba(255,51,102,0.25)', borderRadius: '10px', padding: '11px 14px', marginBottom: '14px', color: '#ff6b6b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px', lineHeight: '1.5' }}>
               <span style={{ flexShrink: 0, fontSize: '15px' }}>⚠️</span> {error}
@@ -419,8 +352,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Submit */}
-          <button className="submit-btn" onClick={handleSubmit} disabled={loading || googleLoading}
+          <button className="submit-btn" onClick={handleSubmit} disabled={loading}
             style={{ background: loading ? 'rgba(0,255,136,0.4)' : '#00ff88', color: '#050a0f', boxShadow: loading ? 'none' : '0 6px 24px rgba(0,255,136,0.25)', marginBottom: '18px' }}>
             {loading ? (
               <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
@@ -430,17 +362,15 @@ export default function LoginPage() {
             ) : mode === 'login' ? '🔓 تسجيل الدخول' : '🚀 إنشاء الحساب'}
           </button>
 
-          {/* Switch mode */}
           <p style={{ textAlign: 'center', color: '#7090a8', fontSize: '13px' }}>
             {mode === 'login' ? 'ليس لديك حساب؟ ' : 'لديك حساب بالفعل؟ '}
             <button onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); setSuccess(''); setTouched({}) }}
-              style={{ background: 'none', border: 'none', color: '#00ff88', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: '13px', fontWeight: '900', padding: 0, transition: 'opacity 0.2s' }}>
+              style={{ background: 'none', border: 'none', color: '#00ff88', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: '13px', fontWeight: '900', padding: 0 }}>
               {mode === 'login' ? 'سجّل الآن مجاناً ←' : '← تسجيل الدخول'}
             </button>
           </p>
         </div>
 
-        {/* Security badges */}
         <div className="fade-up" style={{ animationDelay: '0.3s', display: 'flex', gap: '16px', marginTop: '18px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {['🔒 SSL مشفر', '🛡️ بياناتك آمنة', '🎓 مجاني 100%', '🚫 بدون إعلانات'].map((b, i) => (
             <span key={i} style={{ color: '#3a5a70', fontSize: '11px', fontFamily: 'Space Mono, monospace' }}>{b}</span>
