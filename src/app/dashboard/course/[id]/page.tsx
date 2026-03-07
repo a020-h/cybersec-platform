@@ -523,7 +523,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                 </div>
 
                 {/* ── قسم التعليقات ── */}
-                {currentLesson.id !== 'demo' && user && (
+                {currentLesson.id !== 'demo' && (
                   <LessonComments
                     lessonId={currentLesson.id}
                     userId={user.id}
