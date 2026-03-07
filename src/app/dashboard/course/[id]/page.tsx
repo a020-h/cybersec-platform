@@ -2,6 +2,9 @@
 import { useEffect, useState, use } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
+
+const LessonComments = dynamic(() => import('@/components/LessonComments'), { ssr: false })
 
 const DB_COURSE_IDS: Record<string, string> = {
   '1': '00000000-0000-0000-0000-000000000001',
@@ -54,7 +57,6 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
       if (!session) { router.push('/'); return }
       setUser(session.user)
       setSessionToken(session.access_token)
-      // Store email for certificate
       setUserEmail(session.user.email || '')
 
       const dbId = DB_COURSE_IDS[courseId]
@@ -100,170 +102,62 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
       const jsPDF = jsPDFModule.jsPDF || (jsPDFModule as any).default
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
       const W = 297, H = 210
-
       const courseNamesEn: Record<string, string> = {
-        '1': 'Cybersecurity Fundamentals',
-        '2': 'Networks & TCP/IP Protocols',
-        '3': 'Penetration Testing',
-        '4': 'Malware Analysis',
-        '5': 'Social Engineering',
-        '6': 'Cryptography & Crypto',
+        '1': 'Cybersecurity Fundamentals', '2': 'Networks & TCP/IP Protocols',
+        '3': 'Penetration Testing', '4': 'Malware Analysis',
+        '5': 'Social Engineering', '6': 'Cryptography & Crypto',
       }
       const courseNameEn = courseNamesEn[courseId] || 'Cybersecurity'
-
-      // Use email prefix as the display name (always Latin/English)
-      const displayName = userEmail
-        ? userEmail.split('@')[0].replace(/[^a-zA-Z0-9._\-]/g, '').slice(0, 30)
-        : 'Learner'
-
+      const displayName = userEmail ? userEmail.split('@')[0].replace(/[^a-zA-Z0-9._\-]/g, '').slice(0, 30) : 'Learner'
       const hex = course.color.replace('#', '')
-      const cr = parseInt(hex.slice(0, 2), 16)
-      const cg = parseInt(hex.slice(2, 4), 16)
-      const cb = parseInt(hex.slice(4, 6), 16)
-
-      // Background
-      doc.setFillColor(5, 10, 15)
-      doc.rect(0, 0, W, H, 'F')
-
-      // Subtle grid pattern (horizontal lines)
-      doc.setDrawColor(15, 30, 45)
-      doc.setLineWidth(0.2)
-      for (let y = 20; y < H; y += 10) {
-        doc.line(0, y, W, y)
-      }
-      for (let x = 20; x < W; x += 10) {
-        doc.line(x, 0, x, H)
-      }
-
-      // Outer border
-      doc.setDrawColor(26, 58, 80)
-      doc.setLineWidth(0.8)
-      doc.rect(10, 10, W - 20, H - 20)
-
-      // Inner accent border
-      doc.setDrawColor(cr, cg, cb)
-      doc.setLineWidth(0.4)
-      doc.rect(14, 14, W - 28, H - 28)
-
-      // Corner circles
+      const cr = parseInt(hex.slice(0, 2), 16), cg = parseInt(hex.slice(2, 4), 16), cb = parseInt(hex.slice(4, 6), 16)
+      doc.setFillColor(5, 10, 15); doc.rect(0, 0, W, H, 'F')
+      doc.setDrawColor(15, 30, 45); doc.setLineWidth(0.2)
+      for (let y = 20; y < H; y += 10) doc.line(0, y, W, y)
+      for (let x = 20; x < W; x += 10) doc.line(x, 0, x, H)
+      doc.setDrawColor(26, 58, 80); doc.setLineWidth(0.8); doc.rect(10, 10, W - 20, H - 20)
+      doc.setDrawColor(cr, cg, cb); doc.setLineWidth(0.4); doc.rect(14, 14, W - 28, H - 28)
       doc.setFillColor(cr, cg, cb)
-      doc.circle(16, 16, 2.5, 'F')
-      doc.circle(W - 16, 16, 2.5, 'F')
-      doc.circle(16, H - 16, 2.5, 'F')
-      doc.circle(W - 16, H - 16, 2.5, 'F')
-
-      // Top accent bar
-      doc.setFillColor(cr, cg, cb)
+      doc.circle(16, 16, 2.5, 'F'); doc.circle(W - 16, 16, 2.5, 'F')
+      doc.circle(16, H - 16, 2.5, 'F'); doc.circle(W - 16, H - 16, 2.5, 'F')
       doc.rect(14, 14, W - 28, 1.5, 'F')
-
-      // Platform name
-      doc.setFontSize(13)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(cr, cg, cb)
-      doc.text('CYBER', W / 2 - 6, 28, { align: 'right' })
-      doc.setTextColor(112, 144, 168)
-      doc.text('Arabi', W / 2 - 4, 28, { align: 'left' })
-
-      // Divider
-      doc.setDrawColor(cr, cg, cb)
-      doc.setLineWidth(0.6)
-      doc.line(50, 33, W - 50, 33)
-
-      // Main title
-      doc.setFontSize(30)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(13); doc.setFont('helvetica', 'bold')
+      doc.setTextColor(cr, cg, cb); doc.text('CYBER', W / 2 - 6, 28, { align: 'right' })
+      doc.setTextColor(112, 144, 168); doc.text('Arabi', W / 2 - 4, 28, { align: 'left' })
+      doc.setDrawColor(cr, cg, cb); doc.setLineWidth(0.6); doc.line(50, 33, W - 50, 33)
+      doc.setFontSize(30); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255)
       doc.text('CERTIFICATE OF COMPLETION', W / 2, 52, { align: 'center' })
-
-      // Subtitle
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(112, 144, 168)
+      doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(112, 144, 168)
       doc.text('This document certifies the successful completion of the following course', W / 2, 62, { align: 'center' })
-
-      // Divider
-      doc.setDrawColor(26, 58, 80)
-      doc.setLineWidth(0.3)
-      doc.line(70, 68, W - 70, 68)
-
-      // "Presented to"
-      doc.setFontSize(11)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(112, 144, 168)
+      doc.setDrawColor(26, 58, 80); doc.setLineWidth(0.3); doc.line(70, 68, W - 70, 68)
+      doc.setFontSize(11); doc.setFont('helvetica', 'normal'); doc.setTextColor(112, 144, 168)
       doc.text('PRESENTED TO', W / 2, 80, { align: 'center' })
-
-      // Name (email prefix — always Latin)
-      doc.setFontSize(36)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(cr, cg, cb)
+      doc.setFontSize(36); doc.setFont('helvetica', 'bold'); doc.setTextColor(cr, cg, cb)
       doc.text(displayName, W / 2, 98, { align: 'center' })
-
-      // Underline name
       const nw = doc.getTextWidth(displayName)
-      doc.setDrawColor(cr, cg, cb)
-      doc.setLineWidth(0.8)
+      doc.setDrawColor(cr, cg, cb); doc.setLineWidth(0.8)
       doc.line(W / 2 - nw / 2, 101, W / 2 + nw / 2, 101)
-
-      // "for successfully completing"
-      doc.setFontSize(11)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(112, 144, 168)
+      doc.setFontSize(11); doc.setFont('helvetica', 'normal'); doc.setTextColor(112, 144, 168)
       doc.text('for successfully completing', W / 2, 113, { align: 'center' })
-
-      // Course name box
-      doc.setFillColor(15, 31, 48)
-      doc.setDrawColor(cr, cg, cb)
-      doc.setLineWidth(0.5)
+      doc.setFillColor(15, 31, 48); doc.setDrawColor(cr, cg, cb); doc.setLineWidth(0.5)
       doc.roundedRect(W / 2 - 80, 118, 160, 20, 5, 5, 'FD')
-      doc.setFontSize(15)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(15); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255)
       doc.text(courseNameEn, W / 2, 131, { align: 'center' })
-
-      // Bottom divider
-      doc.setDrawColor(26, 58, 80)
-      doc.setLineWidth(0.3)
-      doc.line(50, 148, W - 50, 148)
-
-      // Date & Certificate ID
+      doc.setDrawColor(26, 58, 80); doc.setLineWidth(0.3); doc.line(50, 148, W - 50, 148)
       const today = new Date()
       const dateStr = today.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })
       const certId = 'CA-' + Math.random().toString(36).slice(2, 8).toUpperCase()
-
-      doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(112, 144, 168)
-      doc.text('DATE OF ISSUE', 60, 158)
-      doc.text('CERTIFICATE ID', W - 60, 158, { align: 'right' })
-
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(200, 220, 240)
-      doc.text(dateStr, 60, 165)
-      doc.text(certId, W - 60, 165, { align: 'right' })
-
-      // Seal
-      doc.setDrawColor(cr, cg, cb)
-      doc.setLineWidth(0.8)
-      doc.circle(W / 2, 163, 14)
-      doc.setFillColor(cr, cg, cb)
-      doc.circle(W / 2, 163, 11, 'F')
-      // Checkmark lines instead of Unicode symbol
-      doc.setDrawColor(5, 10, 15)
-      doc.setLineWidth(2)
-      doc.line(W / 2 - 5, 163, W / 2 - 1, 167)
-      doc.line(W / 2 - 1, 167, W / 2 + 6, 158)
-
-      // Bottom bar
-      doc.setFillColor(cr, cg, cb)
-      doc.rect(14, H - 15.5, W - 28, 1.5, 'F')
-
-      // Footer
-      doc.setFontSize(8)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(50, 80, 100)
+      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(112, 144, 168)
+      doc.text('DATE OF ISSUE', 60, 158); doc.text('CERTIFICATE ID', W - 60, 158, { align: 'right' })
+      doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(200, 220, 240)
+      doc.text(dateStr, 60, 165); doc.text(certId, W - 60, 165, { align: 'right' })
+      doc.setDrawColor(cr, cg, cb); doc.setLineWidth(0.8); doc.circle(W / 2, 163, 14)
+      doc.setFillColor(cr, cg, cb); doc.circle(W / 2, 163, 11, 'F')
+      doc.setDrawColor(5, 10, 15); doc.setLineWidth(2)
+      doc.line(W / 2 - 5, 163, W / 2 - 1, 167); doc.line(W / 2 - 1, 167, W / 2 + 6, 158)
+      doc.setFillColor(cr, cg, cb); doc.rect(14, H - 15.5, W - 28, 1.5, 'F')
+      doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(50, 80, 100)
       doc.text('CYBERArabi Learning Platform  -  Verified Certificate', W / 2, H - 8, { align: 'center' })
-
       doc.save(`CYBERArabi-${courseNameEn.replace(/\s+/g, '-')}-${displayName}.pdf`)
     } catch (err) {
       console.error('Certificate error:', err)
@@ -307,8 +201,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
     )
     const existing = await checkRes.json()
     if (existing?.length > 0) {
-      setCompleted(new Set([...completed, currentLesson.id]))
-      return
+      setCompleted(new Set([...completed, currentLesson.id])); return
     }
 
     const bonus = quizScore === questions.length ? 25 : quizScore > 0 ? 10 : 0
@@ -331,6 +224,18 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
       method: 'PATCH',
       headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${sessionToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ points: newPoints })
+    })
+
+    // ── إشعار كسب النقاط ──
+    await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/notifications`, {
+      method: 'POST',
+      headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${sessionToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: user.id,
+        title: `⭐ +${15 + bonus} نقطة`,
+        message: `أكملت درس "${currentLesson.title}"${bonus === 25 ? ' بإجابات كاملة! 🏆' : bonus === 10 ? ' مع إجابات صحيحة!' : ''}`,
+        type: 'course',
+      })
     })
 
     setCompleted(new Set([...completed, currentLesson.id]))
@@ -364,9 +269,7 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
     for (const line of lines) {
       const trimmed = line.trim()
       if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
-        inTable = true
-        tableRows.push(trimmed.slice(1, -1).split('|'))
-        continue
+        inTable = true; tableRows.push(trimmed.slice(1, -1).split('|')); continue
       }
       if (inTable) flushTable()
       if (trimmed.startsWith('## ')) {
@@ -558,7 +461,6 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                 )
               })}
             </div>
-
             {courseCompleted && (
               <div style={{ padding: '16px', borderTop: '1px solid #1a3a50' }}>
                 <button className="cert-btn" onClick={generateCertificate} disabled={certLoading}
@@ -619,6 +521,15 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                     </button>
                   )}
                 </div>
+
+                {/* ── قسم التعليقات ── */}
+                {currentLesson.id !== 'demo' && user && (
+                  <LessonComments
+                    lessonId={currentLesson.id}
+                    userId={user.id}
+                    accentColor={course.color}
+                  />
+                )}
               </div>
             )}
           </div>
