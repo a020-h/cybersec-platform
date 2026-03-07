@@ -43,8 +43,11 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   const [quizDone, setQuizDone] = useState(false)
   const [sessionToken, setSessionToken] = useState('')
   const [certLoading, setCertLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const course = staticCourses[courseId] || { title: 'المسار', icon: '📚', color: '#00ff88' }
+
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     const init = async () => {
@@ -226,7 +229,6 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
       body: JSON.stringify({ points: newPoints })
     })
 
-    // ── إشعار كسب النقاط ──
     await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/notifications`, {
       method: 'POST',
       headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${sessionToken}`, 'Content-Type': 'application/json' },
@@ -523,13 +525,13 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
                 </div>
 
                 {/* ── قسم التعليقات ── */}
-                {currentLesson.id !== 'demo' && (
-  <LessonComments
-    lessonId={currentLesson.id}
-    userId={user?.id || ''}
-    accentColor={course.color}
-  />
-)}
+                {mounted && currentLesson.id !== 'demo' && (
+                  <LessonComments
+                    lessonId={currentLesson.id}
+                    userId={user?.id || ''}
+                    accentColor={course.color}
+                  />
+                )}
               </div>
             )}
           </div>
