@@ -162,7 +162,7 @@ export default function LoginPage() {
     setError('')
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/dashboard` }
+      options: { redirectTo: `${window.location.origin}/auth/callback` }
     })
     if (err) { setError('فشل تسجيل الدخول بجوجل: ' + err.message); setGoogleLoading(false) }
   }
