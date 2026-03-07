@@ -21,6 +21,15 @@ const getLevel = (points: number) => {
 
 const avatars = ['🧑‍💻', '👨‍💻', '👩‍💻', '🕵️', '🦾', '🤖', '👾', '🎯']
 
+const badgeList = [
+  { icon: '🌱', label: 'المبتدئ', desc: 'أكمل أول درس', color: '#00ff88', check: (l: number, c: number, p: number) => l >= 1 },
+  { icon: '🔥', label: 'متحمس', desc: '5 دروس مكتملة', color: '#ff6b35', check: (l: number) => l >= 5 },
+  { icon: '⚡', label: 'سريع', desc: 'أكمل مسار كامل', color: '#a855f7', check: (_l: number, c: number) => c >= 1 },
+  { icon: '🏆', label: 'بطل', desc: '200+ نقطة', color: '#ffd700', check: (_l: number, _c: number, p: number) => p >= 200 },
+  { icon: '🎯', label: 'دقيق', desc: 'اجتاز اختباراً', color: '#00d4ff', check: (_l: number, _c: number, p: number) => p >= 40 },
+  { icon: '👑', label: 'الخبير', desc: 'أكمل 3 مسارات', color: '#ffd700', check: (_l: number, c: number) => c >= 3 },
+]
+
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null)
   const [points, setPoints] = useState(0)
@@ -39,12 +48,9 @@ export default function ProfilePage() {
       if (!session) { router.push('/'); return }
       setUser(session.user)
       const name = session.user.email?.split('@')[0] || 'مستخدم'
-      setDisplayName(name)
-      setTempName(name)
-
+      setDisplayName(name); setTempName(name)
       const { data: profile } = await supabase.from('profiles').select('points').eq('id', session.user.id).single()
       if (profile) setPoints(profile.points)
-
       const { data: completions } = await supabase.from('lesson_completions').select('course_id, lesson_id').eq('user_id', session.user.id)
       if (completions) {
         setLessonsCompleted(completions.length)
@@ -58,14 +64,18 @@ export default function ProfilePage() {
 
   const saveName = () => {
     if (tempName.trim()) setDisplayName(tempName.trim())
-    setEditingName(false)
-    setSaved(true)
+    setEditingName(false); setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#050a0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: '48px', height: '48px', border: '3px solid #00ff88', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+    <div style={{ minHeight: '100vh', background: '#050a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ position: 'relative', width: '56px', height: '56px' }}>
+        <div style={{ position: 'absolute', inset: 0, border: '2px solid #00ff8815', borderRadius: '50%' }}></div>
+        <div style={{ position: 'absolute', inset: 0, border: '2px solid transparent', borderTopColor: '#00ff88', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+        <div style={{ position: 'absolute', inset: '10px', border: '2px solid transparent', borderTopColor: '#00d4ff', borderRadius: '50%', animation: 'spin 1.2s linear infinite reverse' }}></div>
+      </div>
+      <p style={{ color: '#7090a8', fontFamily: 'monospace', fontSize: '12px', letterSpacing: '2px' }}>LOADING...</p>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
@@ -74,242 +84,274 @@ export default function ProfilePage() {
   const totalLessons = courses.reduce((a, c) => a + c.lessons, 0)
   const completedCourses = courses.filter(c => (courseProgress[c.id] || 0) >= c.lessons).length
   const joinDate = user?.created_at ? new Date(user.created_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' }) : ''
+  const levelPercent = level.nextPts ? Math.min(100, Math.round((points / level.nextPts) * 100)) : 100
+  const overallPercent = Math.round((lessonsCompleted / totalLessons) * 100)
 
-  const badges = [
-    { icon: '🌱', label: 'المبتدئ', unlocked: lessonsCompleted >= 1 },
-    { icon: '🔥', label: 'متحمس', unlocked: lessonsCompleted >= 5 },
-    { icon: '⚡', label: 'سريع', unlocked: completedCourses >= 1 },
-    { icon: '🏆', label: 'بطل', unlocked: points >= 200 },
-    { icon: '🎯', label: 'دقيق', unlocked: points >= 40 },
-    { icon: '👑', label: 'الخبير', unlocked: completedCourses >= 3 },
-  ]
-  const unlockedBadges = badges.filter(b => b.unlocked)
+  const badges = badgeList.map(b => ({ ...b, unlocked: b.check(lessonsCompleted, completedCourses, points) }))
+  const unlockedCount = badges.filter(b => b.unlocked).length
 
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Space+Mono:wght@400;700&display=swap');
-        * { margin:0; padding:0; box-sizing:border-box; list-style:none; }
-        body { font-family:'Cairo',sans-serif; background:#050a0f; color:#e0f0ff; }
-        body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(#1a3a5022 1px,transparent 1px),linear-gradient(90deg,#1a3a5022 1px,transparent 1px); background-size:60px 60px; z-index:0; pointer-events:none; }
-        ::-webkit-scrollbar { width:6px; } ::-webkit-scrollbar-track { background:#0a1520; } ::-webkit-scrollbar-thumb { background:#1a3a50; border-radius:3px; }
-        @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; list-style:none; }
+        body { font-family:'Cairo',sans-serif; background:#050a0f; color:#e0f0ff; overflow-x:hidden; }
+
+        .bg-grid { position:fixed; inset:0; z-index:0; pointer-events:none;
+          background-image: linear-gradient(rgba(0,255,136,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,136,0.025) 1px, transparent 1px);
+          background-size:50px 50px;
+          mask-image: radial-gradient(ellipse 80% 80% at 50% 30%, black, transparent); }
+        .bg-glow { position:fixed; top:-150px; right:-150px; width:500px; height:500px; background:radial-gradient(circle, rgba(0,255,136,0.05) 0%, transparent 70%); pointer-events:none; z-index:0; }
+
+        ::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-track { background:#050a0f; } ::-webkit-scrollbar-thumb { background:#1a3a50; border-radius:10px; }
+
+        @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
         @keyframes spin { to{transform:rotate(360deg)} }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        @keyframes glow { 0%,100%{box-shadow:0 0 20px #00ff8833} 50%{box-shadow:0 0 40px #00ff8866} }
-        .fade-up { animation:fadeUp 0.4s ease both; }
-        .avatar-opt { transition:all 0.2s; cursor:pointer; border:2px solid #1a3a50; border-radius:12px; padding:10px; font-size:28px; text-align:center; }
-        .avatar-opt:hover { border-color:#00ff8888; transform:scale(1.1); }
-        .avatar-opt.selected { border-color:#00ff88; background:rgba(0,255,136,0.1); box-shadow:0 0 16px #00ff8833; }
-        .stat-box { transition:all 0.3s; }
-        .stat-box:hover { transform:translateY(-3px); border-color:#00ff8844 !important; }
-        .course-row { transition:all 0.2s; border-radius:8px; padding:12px; cursor:pointer; }
-        .course-row:hover { background:rgba(255,255,255,0.03); }
-        .back-btn { transition:all 0.2s; }
-        .back-btn:hover { border-color:#00ff88 !important; color:#00ff88 !important; }
-        .save-btn { transition:all 0.2s; }
-        .save-btn:hover { opacity:0.85; transform:translateY(-1px); }
-        @media (max-width: 768px) {
-          .profile-nav { padding: 0 16px !important; }
-          .profile-main { padding: 20px 16px !important; }
-          .profile-header { padding: 24px 16px !important; }
-          .profile-header-inner { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
-          .points-badge { width: 100% !important; text-align: center !important; }
-          .stats-grid-4 { grid-template-columns: repeat(2,1fr) !important; gap: 10px !important; }
-          .two-col { grid-template-columns: 1fr !important; }
-          .avatar-grid { grid-template-columns: repeat(4,1fr) !important; }
-          .profile-title { font-size: 20px !important; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+        @keyframes avatarGlow { 0%,100%{box-shadow:0 0 20px rgba(0,255,136,0.2)} 50%{box-shadow:0 0 40px rgba(0,255,136,0.45)} }
+
+        .fade-up { animation:fadeUp 0.45s cubic-bezier(0.4,0,0.2,1) both; }
+        .avatar-opt { transition:all 0.25s; cursor:pointer; border:2px solid #1a3a50; border-radius:14px; padding:10px; font-size:26px; text-align:center; background:#080f18; }
+        .avatar-opt:hover { border-color:#00ff8866; transform:scale(1.12) translateY(-2px); background:#0a1520; }
+        .avatar-opt.sel { border-color:#00ff88; background:rgba(0,255,136,0.1); box-shadow:0 0 20px rgba(0,255,136,0.25); }
+        .course-row { transition:all 0.25s; border-radius:10px; padding:12px 14px; cursor:pointer; border:1px solid transparent; }
+        .course-row:hover { background:rgba(255,255,255,0.03); border-color:#1a3a5066; }
+        .stat-box { transition:all 0.3s; position:relative; overflow:hidden; }
+        .stat-box:hover { transform:translateY(-4px); }
+        .badge-item { transition:all 0.3s; border-radius:14px; padding:16px 10px; text-align:center; position:relative; overflow:hidden; cursor:default; }
+        .badge-item.unlocked:hover { transform:translateY(-4px) scale(1.03); }
+        .nav-btn { transition:all 0.2s; border-radius:100px; padding:8px 18px; font-family:'Cairo',sans-serif; font-size:13px; cursor:pointer; font-weight:700; border:1px solid; }
+        .nav-btn:hover { transform:translateY(-1px); filter:brightness(1.15); }
+
+        @media (max-width:768px) {
+          .navbar { padding:0 16px !important; }
+          .main-wrap { padding:20px 16px !important; }
+          .hero-inner { flex-direction:column !important; gap:20px !important; }
+          .pts-badge { width:100% !important; text-align:center !important; }
+          .stats-4 { grid-template-columns:repeat(2,1fr) !important; gap:10px !important; }
+          .two-col { grid-template-columns:1fr !important; }
+          .avatar-grid { grid-template-columns:repeat(4,1fr) !important; }
         }
       `}</style>
+
+      <div className="bg-grid"></div>
+      <div className="bg-glow"></div>
 
       <div style={{ minHeight: '100vh', position: 'relative', zIndex: 1 }} dir="rtl">
 
         {/* Navbar */}
-        <nav className="profile-nav" style={{ background: 'rgba(5,10,15,0.95)', borderBottom: '1px solid #1a3a50', padding: '0 40px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(20px)' }}>
-          <span style={{ fontFamily: 'monospace', fontSize: '20px', fontWeight: '700', color: '#00ff88', letterSpacing: '2px' }}>🔐 CYBER<span style={{ color: '#7090a8' }}>عربي</span></span>
+        <nav className="navbar" style={{ background: 'rgba(5,10,15,0.88)', borderBottom: '1px solid rgba(26,58,80,0.7)', padding: '0 40px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(24px)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'Space Mono, monospace', fontSize: '18px', fontWeight: '700', letterSpacing: '2px' }}>
+            <span style={{ fontSize: '20px' }}>🔐</span>
+            <span style={{ color: '#00ff88', textShadow: '0 0 20px rgba(0,255,136,0.4)' }}>CYBER</span>
+            <span style={{ color: '#7090a8' }}>عربي</span>
+          </div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="back-btn" onClick={() => router.push('/dashboard')}
-              style={{ background: '#0a1520', border: '1px solid #1a3a50', color: '#7090a8', padding: '8px 20px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer' }}>
+            <button className="nav-btn" onClick={() => router.push('/dashboard')}
+              style={{ background: 'rgba(26,58,80,0.4)', borderColor: '#1a3a5088', color: '#a0c0d8' }}>
               ← الداشبورد
             </button>
-            <button onClick={() => supabase.auth.signOut().then(() => router.push('/'))}
-              style={{ background: 'rgba(255,51,102,0.1)', border: '1px solid rgba(255,51,102,0.3)', color: '#ff3366', padding: '8px 20px', borderRadius: '100px', fontFamily: 'Cairo,sans-serif', fontSize: '13px', cursor: 'pointer' }}>
+            <button className="nav-btn" onClick={() => supabase.auth.signOut().then(() => router.push('/'))}
+              style={{ background: 'rgba(255,51,102,0.08)', borderColor: 'rgba(255,51,102,0.25)', color: '#ff3366' }}>
               خروج
             </button>
           </div>
         </nav>
 
-        <div className="profile-main" style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px' }}>
+        <div className="main-wrap" style={{ maxWidth: '1000px', margin: '0 auto', padding: '36px 40px' }}>
 
-          {/* Profile Header */}
-          <div className="fade-up profile-header" style={{ background: 'linear-gradient(135deg,#0a1520,#080f18)', border: '1px solid #1a3a50', borderRadius: '20px', padding: '40px', marginBottom: '24px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: '-40px', left: '-40px', width: '200px', height: '200px', background: '#00ff8808', borderRadius: '50%' }}></div>
-            <div style={{ position: 'absolute', bottom: '-60px', right: '-20px', width: '160px', height: '160px', background: '#00d4ff06', borderRadius: '50%' }}></div>
+          {/* ── PROFILE HERO ── */}
+          <div className="fade-up" style={{ background: 'linear-gradient(135deg, rgba(10,21,32,0.95), rgba(8,15,24,0.95))', border: `1px solid ${level.color}25`, borderRadius: '22px', padding: '36px 40px', marginBottom: '20px', position: 'relative', overflow: 'hidden' }}>
+            {/* BG orbs */}
+            <div style={{ position: 'absolute', top: '-60px', left: '-60px', width: '240px', height: '240px', background: `radial-gradient(circle, ${level.color}10 0%, transparent 70%)`, borderRadius: '50%', pointerEvents: 'none' }}></div>
+            <div style={{ position: 'absolute', bottom: '-40px', right: '-40px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}></div>
+            {/* Top accent line */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${level.color}60, transparent)` }}></div>
 
-            <div className="profile-header-inner" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '32px', flexWrap: 'wrap' }}>
+            <div className="hero-inner" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '32px', flexWrap: 'wrap' }}>
+
               {/* Avatar */}
-              <div style={{ position: 'relative' }}>
-                <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'linear-gradient(135deg,#0f2a1a,#0a1520)', border: `3px solid ${level.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px', boxShadow: `0 0 30px ${level.color}33`, animation: 'glow 3s ease-in-out infinite' }}>
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div style={{ width: '110px', height: '110px', borderRadius: '50%', background: `linear-gradient(135deg, #0f2a1a, #0a1520)`, border: `3px solid ${level.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '52px', animation: 'avatarGlow 3s ease-in-out infinite' }}>
                   {avatars[selectedAvatar]}
                 </div>
-                <div style={{ position: 'absolute', bottom: 0, left: 0, background: level.color, borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', border: '2px solid #050a0f' }}>
+                <div style={{ position: 'absolute', bottom: 2, left: 2, background: level.color, borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', border: '3px solid #050a0f', animation: 'float 3s ease-in-out infinite' }}>
                   {level.icon}
                 </div>
               </div>
 
               {/* Info */}
               <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px', flexWrap: 'wrap' }}>
                   {editingName ? (
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <input value={tempName} onChange={e => setTempName(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && saveName()}
-                        style={{ background: '#0f1f30', border: '1px solid #00ff8866', borderRadius: '8px', padding: '6px 14px', color: 'white', fontFamily: 'Cairo,sans-serif', fontSize: '20px', fontWeight: '700', outline: 'none', width: '200px' }}
+                        style={{ background: '#0f1f30', border: '1px solid #00ff8855', borderRadius: '10px', padding: '8px 16px', color: 'white', fontFamily: 'Cairo, sans-serif', fontSize: '20px', fontWeight: '700', outline: 'none', width: '200px', transition: 'border-color 0.2s' }}
                         autoFocus />
-                      <button className="save-btn" onClick={saveName}
-                        style={{ background: '#00ff88', color: '#050a0f', border: 'none', borderRadius: '8px', padding: '6px 16px', fontFamily: 'Cairo,sans-serif', fontWeight: '700', cursor: 'pointer', fontSize: '14px' }}>
+                      <button onClick={saveName}
+                        style={{ background: '#00ff88', color: '#050a0f', border: 'none', borderRadius: '10px', padding: '8px 18px', fontFamily: 'Cairo, sans-serif', fontWeight: '700', cursor: 'pointer', fontSize: '14px', transition: 'opacity 0.2s' }}>
                         حفظ
                       </button>
                       <button onClick={() => setEditingName(false)}
-                        style={{ background: 'transparent', color: '#7090a8', border: '1px solid #1a3a50', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontFamily: 'Cairo,sans-serif' }}>
+                        style={{ background: 'transparent', color: '#7090a8', border: '1px solid #1a3a50', borderRadius: '10px', padding: '8px 14px', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', fontSize: '14px' }}>
                         إلغاء
                       </button>
                     </div>
                   ) : (
                     <>
-                      <h1 style={{ fontSize: '26px', fontWeight: '900', color: 'white' }}>{displayName}</h1>
+                      <h1 style={{ fontSize: '28px', fontWeight: '900', color: 'white', letterSpacing: '-0.5px' }}>{displayName}</h1>
                       <button onClick={() => setEditingName(true)}
-                        style={{ background: 'transparent', border: '1px solid #1a3a50', color: '#7090a8', padding: '4px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontFamily: 'Cairo,sans-serif', transition: 'all 0.2s' }}
+                        style={{ background: 'transparent', border: '1px solid #1a3a50', color: '#7090a8', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontFamily: 'Cairo, sans-serif', transition: 'all 0.2s' }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = '#00ff8866'; e.currentTarget.style.color = '#00ff88' }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a3a50'; e.currentTarget.style.color = '#7090a8' }}>
                         ✏️ تعديل
                       </button>
-                      {saved && <span style={{ color: '#00ff88', fontSize: '13px', fontFamily: 'monospace' }}>✓ تم الحفظ</span>}
+                      {saved && <span style={{ color: '#00ff88', fontSize: '13px', fontFamily: 'monospace', animation: 'fadeUp 0.3s ease' }}>✓ تم الحفظ</span>}
                     </>
                   )}
                 </div>
-                <p style={{ color: '#7090a8', fontSize: '14px', marginBottom: '12px', fontFamily: 'monospace' }}>{user?.email}</p>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  <span style={{ background: level.color + '22', border: `1px solid ${level.color}44`, color: level.color, padding: '4px 14px', borderRadius: '100px', fontSize: '13px', fontFamily: 'monospace', fontWeight: '700' }}>
+
+                <p style={{ color: '#7090a8', fontSize: '13px', marginBottom: '14px', fontFamily: 'Space Mono, monospace' }}>{user?.email}</p>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ background: `${level.color}18`, border: `1px solid ${level.color}35`, color: level.color, padding: '4px 14px', borderRadius: '100px', fontSize: '13px', fontFamily: 'Space Mono, monospace', fontWeight: '700' }}>
                     {level.icon} {level.label}
                   </span>
-                  <span style={{ background: '#0f1f30', border: '1px solid #1a3a50', color: '#7090a8', padding: '4px 14px', borderRadius: '100px', fontSize: '12px', fontFamily: 'monospace' }}>
-                    📅 انضم {joinDate}
+                  <span style={{ background: 'rgba(26,58,80,0.5)', border: '1px solid #1a3a5088', color: '#7090a8', padding: '4px 14px', borderRadius: '100px', fontSize: '12px', fontFamily: 'Space Mono, monospace' }}>
+                    📅 {joinDate}
                   </span>
-                  {unlockedBadges.length > 0 && (
-                    <span style={{ background: '#0f1f30', border: '1px solid #1a3a50', color: '#7090a8', padding: '4px 14px', borderRadius: '100px', fontSize: '12px', fontFamily: 'monospace' }}>
-                      🏅 {unlockedBadges.length} إنجاز
-                    </span>
-                  )}
+                  <span style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.2)', color: '#ffd700', padding: '4px 14px', borderRadius: '100px', fontSize: '12px', fontFamily: 'Space Mono, monospace' }}>
+                    🏅 {unlockedCount}/6 إنجاز
+                  </span>
                 </div>
               </div>
 
-              {/* Points Badge */}
-              <div className="points-badge" style={{ background: '#0f1f30', border: '1px solid #ffd70044', borderRadius: '16px', padding: '20px 28px', textAlign: 'center' }}>
-                <p style={{ color: '#ffd700', fontFamily: 'monospace', fontSize: '36px', fontWeight: '900', lineHeight: '1' }}>{points}</p>
-                <p style={{ color: '#7090a8', fontSize: '13px', marginTop: '6px' }}>نقطة مكتسبة</p>
+              {/* Points badge */}
+              <div className="pts-badge" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,215,0,0.05))', border: '1px solid rgba(255,215,0,0.25)', borderRadius: '18px', padding: '22px 32px', textAlign: 'center', flexShrink: 0 }}>
+                <p style={{ color: '#ffd700', fontFamily: 'Space Mono, monospace', fontSize: '40px', fontWeight: '700', lineHeight: '1', textShadow: '0 0 30px rgba(255,215,0,0.4)' }}>{points}</p>
+                <p style={{ color: 'rgba(255,215,0,0.5)', fontSize: '11px', marginTop: '6px', letterSpacing: '1px', fontFamily: 'Space Mono, monospace' }}>POINTS</p>
               </div>
             </div>
           </div>
 
-          {/* Avatar Picker */}
-          <div className="fade-up" style={{ animationDelay: '0.1s', background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '16px', padding: '24px', marginBottom: '24px' }}>
-            <h3 style={{ color: '#00ff88', fontFamily: 'monospace', fontSize: '14px', marginBottom: '16px' }}>// اختر أفاتار</h3>
+          {/* ── AVATAR PICKER ── */}
+          <div className="fade-up" style={{ animationDelay: '0.08s', background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '18px', padding: '24px', marginBottom: '20px', backdropFilter: 'blur(10px)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ color: '#00ff88', fontFamily: 'Space Mono, monospace', fontSize: '13px', letterSpacing: '1px' }}>// AVATAR</h3>
+              <span style={{ color: '#1a3a50', fontFamily: 'Space Mono, monospace', fontSize: '11px' }}>اختر شخصيتك</span>
+            </div>
             <div className="avatar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(8,1fr)', gap: '10px' }}>
               {avatars.map((av, i) => (
-                <div key={i} className={`avatar-opt ${selectedAvatar === i ? 'selected' : ''}`}
-                  onClick={() => setSelectedAvatar(i)}>
-                  {av}
-                </div>
+                <div key={i} className={`avatar-opt ${selectedAvatar === i ? 'sel' : ''}`} onClick={() => setSelectedAvatar(i)}>{av}</div>
               ))}
             </div>
           </div>
 
-          {/* Stats Grid */}
-          <div className="fade-up stats-grid-4" style={{ animationDelay: '0.15s', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px', marginBottom: '24px' }}>
+          {/* ── STATS ── */}
+          <div className="fade-up stats-4" style={{ animationDelay: '0.12s', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '20px' }}>
             {[
-              { label: 'النقاط', value: points, color: '#ffd700', icon: '⭐' },
-              { label: 'دروس مكتملة', value: lessonsCompleted, color: '#00ff88', icon: '📚' },
-              { label: 'مسارات مكتملة', value: completedCourses, color: '#00d4ff', icon: '🎯' },
-              { label: 'نسبة الإنجاز', value: `${Math.round((lessonsCompleted / totalLessons) * 100)}%`, color: '#a855f7', icon: '📈' },
+              { label: 'النقاط', value: points, color: '#ffd700', icon: '⭐', suffix: 'pts' },
+              { label: 'دروس مكتملة', value: lessonsCompleted, color: '#00ff88', icon: '📚', suffix: `/${totalLessons}` },
+              { label: 'مسارات مكتملة', value: completedCourses, color: '#00d4ff', icon: '🎯', suffix: '/6' },
+              { label: 'الإنجاز الكلي', value: overallPercent, color: '#a855f7', icon: '📈', suffix: '%' },
             ].map((stat, i) => (
-              <div key={i} className="stat-box"
-                style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '12px', padding: '20px', textAlign: 'center', transition: 'all 0.3s' }}>
-                <p style={{ fontSize: '24px', marginBottom: '8px' }}>{stat.icon}</p>
-                <p style={{ fontFamily: 'monospace', fontSize: '26px', fontWeight: '700', color: stat.color, lineHeight: '1', marginBottom: '6px' }}>{stat.value}</p>
-                <p style={{ color: '#7090a8', fontSize: '12px' }}>{stat.label}</p>
+              <div key={i} className="stat-box" style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '14px', padding: '20px 16px', backdropFilter: 'blur(10px)' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = `${stat.color}40`; e.currentTarget.style.boxShadow = `0 8px 32px ${stat.color}15` }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#1a3a50'; e.currentTarget.style.boxShadow = 'none' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '20px' }}>{stat.icon}</span>
+                  <span style={{ color: `${stat.color}50`, fontFamily: 'Space Mono, monospace', fontSize: '10px' }}>{['PTS', 'DONE', 'DONE', 'PROG'][i]}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+                  <span style={{ fontFamily: 'Space Mono, monospace', fontSize: '26px', fontWeight: '700', color: stat.color, textShadow: `0 0 20px ${stat.color}40` }}>{stat.value}</span>
+                  <span style={{ color: `${stat.color}50`, fontSize: '12px', fontFamily: 'Space Mono, monospace' }}>{stat.suffix}</span>
+                </div>
+                <p style={{ color: '#7090a8', fontSize: '11px', marginTop: '4px' }}>{stat.label}</p>
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${stat.color}40, transparent)`, borderRadius: '0 0 14px 14px' }}></div>
               </div>
             ))}
           </div>
 
-          <div className="two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          {/* ── TWO COLUMNS ── */}
+          <div className="fade-up two-col" style={{ animationDelay: '0.18s', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px' }}>
 
             {/* Course Progress */}
-            <div className="fade-up" style={{ animationDelay: '0.2s', background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '16px', padding: '24px' }}>
-              <h3 style={{ color: '#00ff88', fontFamily: 'monospace', fontSize: '14px', marginBottom: '20px' }}>// تقدم المسارات</h3>
+            <div style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '18px', padding: '24px', backdropFilter: 'blur(10px)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ color: '#00ff88', fontFamily: 'Space Mono, monospace', fontSize: '13px', letterSpacing: '1px' }}>// TRACKS</h3>
+                <span style={{ color: '#1a3a50', fontFamily: 'Space Mono, monospace', fontSize: '11px' }}>{completedCourses}/6</span>
+              </div>
               {courses.map(course => {
                 const done = courseProgress[course.id] || 0
                 const percent = Math.round((done / course.lessons) * 100)
                 return (
-                  <div key={course.id} className="course-row"
-                    onClick={() => window.location.href = `/dashboard/course/${course.id}`}
-                    style={{ marginBottom: '14px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <div key={course.id} className="course-row" onClick={() => window.location.href = `/dashboard/course/${course.id}`}
+                    style={{ marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '7px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontSize: '16px' }}>{course.icon}</span>
-                        <span style={{ color: percent === 100 ? 'white' : '#7090a8', fontSize: '13px', fontWeight: '600' }}>{course.title}</span>
+                        <span style={{ color: percent === 100 ? 'white' : '#7090a8', fontSize: '13px', fontWeight: '600', transition: 'color 0.2s' }}>{course.title}</span>
                       </div>
-                      <span style={{ color: course.color, fontSize: '12px', fontFamily: 'monospace', fontWeight: '700' }}>{percent}%</span>
+                      <span style={{ color: course.color, fontSize: '12px', fontFamily: 'Space Mono, monospace', fontWeight: '700' }}>{percent}%</span>
                     </div>
-                    <div style={{ background: '#0f1f30', borderRadius: '2px', height: '4px' }}>
-                      <div style={{ background: course.color, height: '4px', borderRadius: '2px', width: `${percent}%`, boxShadow: percent > 0 ? `0 0 6px ${course.color}88` : 'none', transition: 'width 1s' }}></div>
+                    <div style={{ background: '#0a1520', borderRadius: '3px', height: '4px' }}>
+                      <div style={{ background: `linear-gradient(90deg, ${course.color}, ${course.color}77)`, height: '4px', borderRadius: '3px', width: `${percent}%`, boxShadow: percent > 0 ? `0 0 6px ${course.color}77` : 'none', transition: 'width 1s' }}></div>
                     </div>
                   </div>
                 )
               })}
             </div>
 
-            {/* Badges */}
-            <div className="fade-up" style={{ animationDelay: '0.25s', background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '16px', padding: '24px' }}>
-              <h3 style={{ color: '#00ff88', fontFamily: 'monospace', fontSize: '14px', marginBottom: '20px' }}>// الإنجازات المفتوحة</h3>
-              {unlockedBadges.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <p style={{ fontSize: '40px', marginBottom: '12px' }}>🔒</p>
-                  <p style={{ color: '#7090a8', fontSize: '14px' }}>أكمل دروساً لفتح الإنجازات</p>
+            {/* Badges + Level */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+              {/* Badges */}
+              <div style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '18px', padding: '24px', backdropFilter: 'blur(10px)', flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ color: '#00ff88', fontFamily: 'Space Mono, monospace', fontSize: '13px', letterSpacing: '1px' }}>// BADGES</h3>
+                  <span style={{ color: '#1a3a50', fontFamily: 'Space Mono, monospace', fontSize: '11px' }}>{unlockedCount}/6</span>
                 </div>
-              ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px' }}>
                   {badges.map((badge, i) => (
-                    <div key={i} style={{ background: badge.unlocked ? '#0f1f30' : '#080f18', border: `1px solid ${badge.unlocked ? '#00ff8844' : '#1a3a50'}`, borderRadius: '10px', padding: '14px', textAlign: 'center', opacity: badge.unlocked ? 1 : 0.3, transition: 'all 0.3s' }}
-                      onMouseEnter={e => { if (badge.unlocked) { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.borderColor = '#00ff8888' } }}
-                      onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = badge.unlocked ? '#00ff8844' : '#1a3a50' }}>
-                      <div style={{ fontSize: '24px', marginBottom: '6px', filter: badge.unlocked ? 'none' : 'grayscale(1)' }}>{badge.icon}</div>
-                      <p style={{ color: badge.unlocked ? 'white' : '#7090a8', fontSize: '12px', fontWeight: '700' }}>{badge.label}</p>
-                      {badge.unlocked && <p style={{ color: '#00ff88', fontSize: '10px', fontFamily: 'monospace', marginTop: '4px' }}>✓</p>}
+                    <div key={i} className={`badge-item ${badge.unlocked ? 'unlocked' : ''}`}
+                      style={{ background: badge.unlocked ? `linear-gradient(135deg, ${badge.color}15, ${badge.color}08)` : 'rgba(8,15,24,0.8)', border: `1px solid ${badge.unlocked ? badge.color + '35' : '#1a3a50'}`, opacity: badge.unlocked ? 1 : 0.28 }}>
+                      {badge.unlocked && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${badge.color}70, transparent)` }}></div>}
+                      <div style={{ fontSize: '26px', marginBottom: '6px', filter: badge.unlocked ? `drop-shadow(0 0 8px ${badge.color}66)` : 'grayscale(1)' }}>{badge.icon}</div>
+                      <p style={{ color: badge.unlocked ? 'white' : '#7090a8', fontWeight: '700', fontSize: '12px', marginBottom: '3px' }}>{badge.label}</p>
+                      <p style={{ color: '#7090a8', fontSize: '10px', lineHeight: '1.3' }}>{badge.desc}</p>
+                      {badge.unlocked && <p style={{ color: badge.color, fontSize: '10px', fontFamily: 'Space Mono, monospace', marginTop: '5px' }}>✓ مفتوح</p>}
                     </div>
                   ))}
                 </div>
-              )}
+              </div>
 
               {/* Level Progress */}
-              <div style={{ marginTop: '24px', padding: '16px', background: '#0f1f30', border: `1px solid ${level.color}33`, borderRadius: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                  <span style={{ color: '#7090a8', fontSize: '13px', fontFamily: 'monospace' }}>المستوى</span>
-                  <span style={{ color: level.color, fontSize: '13px', fontFamily: 'monospace', fontWeight: '700' }}>{level.icon} {level.label}</span>
+              <div style={{ background: `linear-gradient(135deg, ${level.color}10, ${level.color}05)`, border: `1px solid ${level.color}25`, borderRadius: '18px', padding: '22px', backdropFilter: 'blur(10px)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${level.color}60, transparent)` }}></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <h3 style={{ color: level.color, fontFamily: 'Space Mono, monospace', fontSize: '13px', letterSpacing: '1px' }}>// LEVEL</h3>
+                  <span style={{ color: level.color, fontFamily: 'Space Mono, monospace', fontSize: '18px', fontWeight: '700', textShadow: `0 0 20px ${level.color}66` }}>{level.icon} {level.label}</span>
                 </div>
                 {level.next ? (
                   <>
-                    <div style={{ background: '#1a3a50', borderRadius: '2px', height: '6px', marginBottom: '8px' }}>
-                      <div style={{ background: level.color, height: '6px', borderRadius: '2px', width: `${level.nextPts ? Math.min(100, Math.round((points / level.nextPts) * 100)) : 100}%`, transition: 'width 1.2s', boxShadow: `0 0 8px ${level.color}66` }}></div>
+                    <div style={{ background: 'rgba(10,21,32,0.6)', borderRadius: '4px', height: '8px', marginBottom: '10px', overflow: 'hidden' }}>
+                      <div style={{ background: `linear-gradient(90deg, ${level.color}, ${level.color}88)`, height: '8px', borderRadius: '4px', width: `${levelPercent}%`, transition: 'width 1.4s cubic-bezier(0.4,0,0.2,1)', boxShadow: `0 0 12px ${level.color}88` }}></div>
                     </div>
-                    <p style={{ color: '#7090a8', fontSize: '11px', fontFamily: 'monospace' }}>
-                      {points} / {level.nextPts} للوصول لـ {level.next}
-                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#7090a8', fontSize: '11px', fontFamily: 'Space Mono, monospace' }}>{points} pts</span>
+                      <span style={{ color: `${level.color}80`, fontSize: '11px', fontFamily: 'Space Mono, monospace' }}>{level.nextPts} → {level.next}</span>
+                    </div>
                   </>
                 ) : (
-                  <p style={{ color: level.color, fontSize: '12px', fontFamily: 'monospace' }}>🏆 وصلت للمستوى الأعلى!</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: `${level.color}10`, border: `1px solid ${level.color}25`, borderRadius: '10px', padding: '10px 14px' }}>
+                    <span style={{ fontSize: '20px' }}>🏆</span>
+                    <span style={{ color: level.color, fontSize: '13px', fontWeight: '700' }}>وصلت للمستوى الأعلى!</span>
+                  </div>
                 )}
               </div>
+
             </div>
           </div>
         </div>
