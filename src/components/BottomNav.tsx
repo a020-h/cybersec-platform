@@ -29,19 +29,31 @@ export default function BottomNav() {
 
   // Swipe left/right to navigate between pages
   useEffect(() => {
+    const touchStartY = { current: 0 }
+
     const onTouchStart = (e: TouchEvent) => {
       touchStartX.current = e.touches[0].clientX
+      touchStartY.current = e.touches[0].clientY
     }
     const onTouchEnd = (e: TouchEvent) => {
       if (touchStartX.current === null) return
-      const diff = touchStartX.current - e.changedTouches[0].clientX
-      const currentIdx = NAV_ITEMS.findIndex(n => pathname.startsWith(n.href) &&
-        (n.href === '/dashboard' ? pathname === '/dashboard' : true))
+      const diffX = touchStartX.current - e.changedTouches[0].clientX
+      const diffY = Math.abs(touchStartY.current - e.changedTouches[0].clientY)
 
-      if (Math.abs(diff) > 60) {
-        if (diff > 0 && currentIdx < NAV_ITEMS.length - 1) {
+      // تجاهل السحب العمودي — فقط أفقي أكثر من عمودي
+      if (diffY > Math.abs(diffX) || diffY > 30) {
+        touchStartX.current = null
+        return
+      }
+
+      const currentIdx = NAV_ITEMS.findIndex(n =>
+        n.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(n.href)
+      )
+
+      if (Math.abs(diffX) > 80) {
+        if (diffX > 0 && currentIdx < NAV_ITEMS.length - 1) {
           router.push(NAV_ITEMS[currentIdx + 1].href)
-        } else if (diff < 0 && currentIdx > 0) {
+        } else if (diffX < 0 && currentIdx > 0) {
           router.push(NAV_ITEMS[currentIdx - 1].href)
         }
       }
