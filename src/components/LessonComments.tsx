@@ -27,16 +27,18 @@ export default function LessonComments({ lessonId, userId, accentColor = '#00ff8
   }, [lessonId])
 
   const fetchComments = async () => {
-    setLoading(true)
-    const { data } = await supabase
-      .from('lesson_comments')
-      .select('*, profiles(username, avatar)')
-      .eq('lesson_id', lessonId)
-      .order('created_at', { ascending: false })
-      .limit(30)
-    if (data) setComments(data as any)
-    setLoading(false)
-  }
+  setLoading(true)
+  console.log('Fetching comments for lesson:', lessonId)
+  const { data, error } = await supabase
+    .from('lesson_comments')
+    .select('*, profiles(username, avatar)')
+    .eq('lesson_id', lessonId)
+    .order('created_at', { ascending: false })
+    .limit(30)
+  console.log('Comments result:', data, error)
+  if (data) setComments(data as any)
+  setLoading(false)
+}
 
   const postComment = async () => {
     if (!text.trim() || posting) return

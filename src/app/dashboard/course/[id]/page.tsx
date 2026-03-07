@@ -524,12 +524,12 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
 
                 {/* ── قسم التعليقات ── */}
                 {currentLesson.id !== 'demo' && (
-                  <LessonComments
-                    lessonId={currentLesson.id}
-                    userId={user.id}
-                    accentColor={course.color}
-                  />
-                )}
+  <LessonComments
+    lessonId={currentLesson.id}
+    userId={user?.id || ''}
+    accentColor={course.color}
+  />
+)}
               </div>
             )}
           </div>
