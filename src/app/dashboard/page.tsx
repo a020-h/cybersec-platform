@@ -359,7 +359,7 @@ export default function Dashboard() {
               {[
                 { label: 'النقاط الكلية', value: points, color: '#ffd700', icon: '⭐', suffix: 'pts' },
                 { label: 'دروس مكتملة', value: lessonsCompleted, color: '#00ff88', icon: '✓', suffix: `/${totalLessons}` },
-                { label: 'مسارات مكتملة', value: completedCourses, color: '#00d4ff', icon: '🎯', suffix: '/6' },
+                { label: 'مسارات مكتملة', value: completedCourses, color: '#00d4ff', icon: '🎯', suffix: '/10' },
                 { label: 'الإنجاز الكلي', value: overallPercent, color: '#a855f7', icon: '📈', suffix: '%' },
               ].map((stat, i) => (
                 <div key={i} className="stat-card fade-up" style={{ animationDelay: `${i * 0.08}s` }}>
