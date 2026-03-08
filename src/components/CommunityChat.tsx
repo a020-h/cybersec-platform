@@ -246,7 +246,7 @@ export default function CommunityChat({ userId, username, avatar }: Props) {
         <button
           onClick={sendMessage}
           disabled={!text.trim() || sending}
-          style={{ background:text.trim()?'#00ff88':'#1a3a50', color:text.trim()?'#050a0f':'#3a5a70', border:'none', borderRadius:'12px', padding:'10px 18px', fontFamily:'Cairo,sans-serif', fontSize:'14px', fontWeight:'900', cursor:text.trim()?'pointer':'not-allowed', transition:'all 0.2s', flexShrink:0, boxShadow:text.trim()?'0 0 15px rgba(0,255,136,0.3)':'none' }}>
+          style={{ background:text.trim()?'#00ff88':'#1a3a50', color:text.trim()?'#050a0f':'#3a5a70', border:'none', borderRadius:'12px', padding:'11px 18px', fontFamily:'Cairo,sans-serif', fontSize:'14px', fontWeight:'900', cursor:text.trim()?'pointer':'not-allowed', transition:'all 0.2s', flexShrink:0, boxShadow:text.trim()?'0 0 15px rgba(0,255,136,0.3)':'none' }}>
           {sending ? '⏳' : '↑'}
         </button>
       </div>
