@@ -55,7 +55,7 @@ export default function CTFPage() {
       if (!user) { router.push('/'); return }
       setUserId(user.id)
       const today = new Date().toISOString().split('T')[0]
-      const { data: chals } = await supabase.from('ctf_challenges').select('*').lte('active_date', today).order('active_date', { ascending: false })
+      const { data: chals } = await supabase.from('ctf_challenges_safe').select('*').lte('active_date', today).order('active_date', { ascending: false })
       const { data: solves } = await supabase.from('ctf_solves').select('challenge_id').eq('user_id', user.id)
       const solvedIds = new Set(solves?.map(s => s.challenge_id))
       const withSolved = (chals || []).map(c => ({ ...c, solved: solvedIds.has(c.id) }))
@@ -68,24 +68,37 @@ export default function CTFPage() {
   }, [])
 
   const submitFlag = async (challenge: Challenge) => {
-    if (!userId || !flag.trim()) return
-    setSubmitting(true)
-    const { data: chal } = await supabase.from('ctf_challenges').select('flag').eq('id', challenge.id).single()
-    if (chal?.flag?.toLowerCase().trim() === flag.toLowerCase().trim()) {
-      await supabase.from('ctf_solves').insert({ user_id: userId, challenge_id: challenge.id })
-      const { data: prog } = await supabase.from('profiles').select('points').eq('id', userId).single()
-      if (prog) await supabase.from('profiles').update({ points: (prog.points || 0) + challenge.points }).eq('id', userId)
-      setMessage({ text: `🎉 صحيح! ربحت ${challenge.points} نقطة`, type: 'success' })
+  if (!userId || !flag.trim()) return
+  setSubmitting(true)
+  setMessage(null)
+
+  try {
+    // ✅ آمن — الـ flag لا يُكشف أبداً، الفحص يتم في قاعدة البيانات
+    const { data, error } = await supabase.rpc('check_ctf_flag', {
+      challenge_id: challenge.id,
+      user_flag: flag.trim()
+    })
+
+    if (error) {
+      setMessage({ text: '❌ حدث خطأ، حاول مرة أخرى', type: 'error' })
+    } else if (data?.success) {
+      setMessage({ text: `🎉 صحيح! ربحت ${data.points} نقطة`, type: 'success' })
       const update = (c: Challenge) => c.id === challenge.id ? { ...c, solved: true } : c
       setChallenges(prev => prev.map(update))
       setTodayChallenge(prev => prev?.id === challenge.id ? { ...prev, solved: true } : prev)
       setSelected(prev => prev?.id === challenge.id ? { ...prev, solved: true } : prev)
+    } else if (data?.message === 'already_solved') {
+      setMessage({ text: '✅ لقد حللت هذا التحدي مسبقاً!', type: 'success' })
     } else {
       setMessage({ text: '❌ إجابة خاطئة، حاول مجدداً!', type: 'error' })
     }
-    setFlag('')
-    setSubmitting(false)
+  } catch {
+    setMessage({ text: '❌ حدث خطأ غير متوقع', type: 'error' })
   }
+
+  setFlag('')
+  setSubmitting(false)
+}
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#050a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '20px' }}>
