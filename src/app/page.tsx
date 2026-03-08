@@ -96,6 +96,8 @@ function Stagger({
     fade:  { opacity: 1 },
     flip:  { opacity: 1, transform: 'perspective(600px) rotateX(0deg)' },
   }
+  // ✅ الـ grid style يُطبَّق على الـ wrapper مباشرة
+  // كل child يأخذ animation بدون div وسيط يكسر الـ grid
   return (
     <div ref={ref} style={style}>
       {children.map((child, i) => (
@@ -107,6 +109,10 @@ function Stagger({
         }}>
           {child}
         </div>
+      ))}
+    </div>
+  )
+}
       ))}
     </div>
   )
@@ -297,6 +303,7 @@ export default function LandingPage() {
           .cta-banner{padding:40px 20px!important;}
           .screens-grid{grid-template-columns:1fr!important;}
           .testimonials-grid{grid-template-columns:1fr!important;}
+          .steps-card{text-align:center!important;}
           .live-stats-grid{grid-template-columns:repeat(2,1fr)!important;}
         }
         @media(min-width:769px) and (max-width:1100px){
@@ -440,18 +447,13 @@ export default function LandingPage() {
               <span style={{ color:'#00ff88', fontSize:'12px', fontFamily:'monospace' }}>إحصائيات مباشرة</span>
             </div>
           </Reveal>
-          <Stagger
-            animation="scale"
-            stagger={120}
-            style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}
-            itemStyle={{}}
-          >
+          <Stagger animation="scale" stagger={120} style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))', gap:'20px' }} itemStyle={{}}>
             {[
               { value: liveUsers || '∞', label: 'مستخدم مسجّل', icon: '👥', color: '#00ff88', suffix: '+' },
               { value: liveLessons || '∞', label: 'درس مكتمل', icon: '✅', color: '#00d4ff', suffix: '+' },
               { value: livePoints > 1000 ? `${Math.floor(livePoints/1000)}k` : livePoints || '∞', label: 'نقطة مكتسبة', icon: '⭐', color: '#ffd700', suffix: '+' },
             ].map((stat, i) => (
-              <div key={i} className="live-stat">
+              <div key={i} className="live-stat" style={{}}>
                 <div style={{ fontSize:'32px', marginBottom:'8px' }}>{stat.icon}</div>
                 <p style={{ fontFamily:'monospace', fontSize:'36px', fontWeight:'900', color:stat.color, lineHeight:1, marginBottom:'6px' }}>
                   {stat.value}{stat.value !== '∞' ? stat.suffix : ''}
@@ -472,7 +474,7 @@ export default function LandingPage() {
             <Stagger
               animation="flip"
               stagger={150}
-              style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}
+              style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:'20px' }}
             >
               {[
                 { title:'تحديات CTF', desc:'8 تحديات يومية مع عداد تنازلي', icon:'🎯', color:'#ff6b35',
@@ -543,7 +545,7 @@ export default function LandingPage() {
             <Stagger
               animation="up"
               stagger={80}
-              style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}
+              style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:'20px' }}
             >
               {[
                 { icon:'🛡️', color:'#00ff88', title:'6 مسارات تعليمية', desc:'من أساسيات الأمن لاختبار الاختراق والتشفير والهندسة الاجتماعية.' },
@@ -574,7 +576,7 @@ export default function LandingPage() {
             <Stagger
               animation="left"
               stagger={100}
-              style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'20px' }}
+              style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:'20px' }}
             >
               {testimonials.map((t, i) => (
                 <div key={i} className="testimonial-card">
@@ -610,7 +612,7 @@ export default function LandingPage() {
             <Stagger
               animation="scale"
               stagger={160}
-              style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'24px' }}
+              style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:'24px', direction:'ltr' }}
             >
               {[
                 { n:'01', color:'#00ff88', title:'سجّل مجاناً', desc:'أنشئ حسابك في ثوانٍ بإيميلك — لا بطاقة بنكية.' },
