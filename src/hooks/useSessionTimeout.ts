@@ -3,64 +3,57 @@ import { useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
-const TIMEOUT_MS  = 30 * 60 * 1000  // 30 min idle → logout
-const WARNING_MS  =  5 * 60 * 1000  // warn 5 min before
-const EVENTS      = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click']
+const TIMEOUT_MS = 30 * 60 * 1000  // 30 دقيقة خمول
+const WARNING_MS = 25 * 60 * 1000  // تحذير بعد 25 دقيقة
 
-export function useSessionTimeout(
-  onWarning?: () => void,
-  onLogout?: () => void
-) {
-  const router     = useRouter()
-  const timerRef   = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const warnRef    = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const activeRef  = useRef(true)
-
-  const clearTimers = () => {
-    if (timerRef.current)  clearTimeout(timerRef.current)
-    if (warnRef.current)   clearTimeout(warnRef.current)
-  }
+export function useSessionTimeout() {
+  const router = useRouter()
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const warnRef = useRef<NodeJS.Timeout | null>(null)
+  const warnShownRef = useRef(false)
 
   const logout = useCallback(async () => {
-    if (!activeRef.current) return
-    activeRef.current = false
-    clearTimers()
     await supabase.auth.signOut()
-    onLogout?.()
     router.push('/login?reason=timeout')
-  }, [router, onLogout])
+  }, [router])
+
+  const showWarning = useCallback(() => {
+    if (warnShownRef.current) return
+    warnShownRef.current = true
+    // Toast تحذير — سيُعرض في الصفحة إذا أضفت listener
+    const event = new CustomEvent('session-warning', {
+      detail: { message: '⚠️ سيتم تسجيل خروجك بعد 5 دقائق من عدم النشاط' }
+    })
+    window.dispatchEvent(event)
+  }, [])
 
   const resetTimer = useCallback(() => {
-    if (!activeRef.current) return
-    clearTimers()
+    // إلغاء المؤقتات القديمة
+    if (timerRef.current) clearTimeout(timerRef.current)
+    if (warnRef.current) clearTimeout(warnRef.current)
+    warnShownRef.current = false
 
-    // Warning timer
-    warnRef.current = setTimeout(() => {
-      onWarning?.()
-    }, TIMEOUT_MS - WARNING_MS)
-
-    // Logout timer
+    // مؤقت التحذير
+    warnRef.current = setTimeout(showWarning, WARNING_MS)
+    // مؤقت تسجيل الخروج
     timerRef.current = setTimeout(logout, TIMEOUT_MS)
-  }, [logout, onWarning])
+  }, [logout, showWarning])
 
   useEffect(() => {
-    activeRef.current = true
-    resetTimer()
+    // تحقق من وجود session أولاً
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return
 
-    EVENTS.forEach(e => window.addEventListener(e, resetTimer, { passive: true }))
+      // الأحداث التي تعتبر نشاطاً
+      const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click']
+      events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }))
+      resetTimer() // ابدأ العداد
 
-    // Also watch Supabase auth state
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
-        clearTimers()
+      return () => {
+        events.forEach(e => window.removeEventListener(e, resetTimer))
+        if (timerRef.current) clearTimeout(timerRef.current)
+        if (warnRef.current) clearTimeout(warnRef.current)
       }
     })
-
-    return () => {
-      clearTimers()
-      activeRef.current = false
-      EVENTS.forEach(e => window.removeEventListener(e, resetTimer))
-      subscription.unsubscribe()
-    }
   }, [resetTimer])
 }

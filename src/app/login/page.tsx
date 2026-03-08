@@ -31,6 +31,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  // ✅ جديد: حالة انتظار تأكيد البريد
+  const [awaitingConfirm, setAwaitingConfirm] = useState(false)
   const [showPass, setShowPass] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [visible, setVisible] = useState(false)
@@ -112,7 +114,8 @@ export default function LoginPage() {
           if (err.message.includes('Invalid login') || err.message.includes('invalid_credentials')) {
             setError('البريد الإلكتروني أو كلمة المرور غير صحيحة')
           } else if (err.message.includes('Email not confirmed')) {
-            setError('يرجى تأكيد بريدك الإلكتروني أولاً')
+            // ✅ رسالة واضحة + زر إعادة إرسال
+            setError('يرجى تأكيد بريدك الإلكتروني أولاً — تحقق من صندوق الوارد أو البريد العشوائي')
           } else if (err.message.includes('Too many requests')) {
             setError('محاولات كثيرة — انتظر قليلاً ثم حاول مرة أخرى')
           } else {
@@ -120,8 +123,7 @@ export default function LoginPage() {
           }
           triggerShake()
         } else {
-          setSuccess('تم تسجيل الدخول بنجاح! جاري التحويل...')
-          setTimeout(() => router.push('/dashboard'), 1000)
+          router.push('/dashboard')
         }
       } else {
         const { data, error: err } = await supabase.auth.signUp({ email: email.trim(), password })
@@ -139,8 +141,8 @@ export default function LoginPage() {
             points: 0,
             avatar: '🧑‍💻',
           }, { onConflict: 'id' })
-          setSuccess('تم إنشاء حسابك بنجاح! جاري التحويل...')
-          setTimeout(() => router.push('/dashboard'), 1500)
+          // ✅ إظهار شاشة انتظار تأكيد البريد بدل التحويل المباشر
+          setAwaitingConfirm(true)
         }
       }
     } catch {
@@ -148,6 +150,18 @@ export default function LoginPage() {
       triggerShake()
     }
     setLoading(false)
+  }
+
+  // ✅ إعادة إرسال بريد التأكيد
+  const resendConfirmation = async () => {
+    setLoading(true)
+    const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim() })
+    setLoading(false)
+    if (error) {
+      setError('فشل إعادة الإرسال، حاول بعد قليل')
+    } else {
+      setSuccess('✅ تم إرسال البريد مجدداً — تحقق من صندوق الوارد')
+    }
   }
 
   const handleKey = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSubmit() }
@@ -175,6 +189,69 @@ export default function LoginPage() {
     transition: 'all 0.25s',
     boxSizing: 'border-box',
   })
+
+  // ✅ شاشة انتظار تأكيد البريد
+  if (awaitingConfirm) {
+    return (
+      <>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Space+Mono:wght@400;700&display=swap');
+          *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+          body { font-family:'Cairo',sans-serif; background:#050a0f; color:#e0f0ff; }
+          @keyframes fadeUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+          @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+          @keyframes glow { 0%,100%{box-shadow:0 0 30px rgba(0,255,136,0.08)} 50%{box-shadow:0 0 60px rgba(0,255,136,0.2)} }
+          .fade-up { animation:fadeUp 0.55s cubic-bezier(0.4,0,0.2,1) both; }
+          .pulse-icon { animation:pulse 2s ease-in-out infinite; }
+          .card-glow { animation:glow 3s ease-in-out infinite; }
+        `}</style>
+        <canvas ref={canvasRef} style={{ position: 'fixed', inset: 0, zIndex: 0, opacity: 0.15, pointerEvents: 'none' }} />
+        <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} dir="rtl">
+          <div className="fade-up card-glow" style={{ background: 'rgba(8,16,28,0.97)', border: '1px solid rgba(0,255,136,0.2)', borderRadius: '22px', padding: '48px 36px', maxWidth: '440px', width: '100%', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, transparent, rgba(0,255,136,0.6), transparent)' }} />
+            
+            <div className="pulse-icon" style={{ fontSize: '64px', marginBottom: '20px' }}>📧</div>
+            <h2 style={{ fontSize: '24px', fontWeight: '900', color: 'white', marginBottom: '12px' }}>تحقق من بريدك!</h2>
+            <p style={{ color: '#7090a8', fontSize: '14px', lineHeight: '1.9', marginBottom: '8px' }}>
+              أرسلنا رابط التأكيد إلى:
+            </p>
+            <p style={{ color: '#00ff88', fontFamily: 'Space Mono, monospace', fontSize: '14px', marginBottom: '28px', background: 'rgba(0,255,136,0.07)', padding: '10px 16px', borderRadius: '10px', border: '1px solid rgba(0,255,136,0.15)' }}>
+              {email}
+            </p>
+            
+            <div style={{ background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.15)', borderRadius: '12px', padding: '16px', marginBottom: '24px', textAlign: 'right' }}>
+              <p style={{ color: '#a0c0d8', fontSize: '13px', lineHeight: '1.8' }}>
+                📌 افتح البريد واضغط على زر <strong style={{ color: 'white' }}>"تأكيد الحساب"</strong><br/>
+                📁 تحقق من مجلد <strong style={{ color: 'white' }}>البريد العشوائي (Spam)</strong> إذا لم تجده<br/>
+                ⏱️ الرابط صالح لمدة <strong style={{ color: 'white' }}>24 ساعة</strong>
+              </p>
+            </div>
+
+            {error && (
+              <div style={{ background: 'rgba(255,51,102,0.08)', border: '1px solid rgba(255,51,102,0.25)', borderRadius: '10px', padding: '11px 14px', marginBottom: '14px', color: '#ff6b6b', fontSize: '13px' }}>
+                ⚠️ {error}
+              </div>
+            )}
+            {success && (
+              <div style={{ background: 'rgba(0,255,136,0.07)', border: '1px solid rgba(0,255,136,0.25)', borderRadius: '10px', padding: '11px 14px', marginBottom: '14px', color: '#00ff88', fontSize: '13px' }}>
+                {success}
+              </div>
+            )}
+
+            <button onClick={resendConfirmation} disabled={loading}
+              style={{ width: '100%', background: 'transparent', border: '1px solid rgba(0,255,136,0.3)', borderRadius: '12px', padding: '13px', color: '#00ff88', fontFamily: 'Cairo, sans-serif', fontSize: '15px', fontWeight: '700', cursor: 'pointer', marginBottom: '12px', transition: 'all 0.25s' }}>
+              {loading ? 'جاري الإرسال...' : '🔄 إعادة إرسال البريد'}
+            </button>
+            
+            <button onClick={() => { setAwaitingConfirm(false); setMode('login'); setPassword(''); setError(''); setSuccess('') }}
+              style={{ background: 'none', border: 'none', color: '#5a7a90', fontFamily: 'Cairo, sans-serif', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}>
+              ← العودة لتسجيل الدخول
+            </button>
+          </div>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
@@ -211,7 +288,6 @@ export default function LoginPage() {
 
       <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', opacity: visible ? 1 : 0, transition: 'opacity 0.5s', overflowY: 'auto' }} dir="rtl">
 
-        {/* Logo */}
         <div className="fade-up" style={{ marginBottom: '24px', textAlign: 'center' }}>
           <button onClick={() => router.push('/')} style={{ background: 'none', border: 'none', color: '#7090a8', fontFamily: 'Cairo, sans-serif', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', transition: 'color 0.2s', margin: '0 auto 10px' }}>
             ← العودة للرئيسية
@@ -224,20 +300,17 @@ export default function LoginPage() {
           <p style={{ color: '#3a5a70', fontFamily: 'Space Mono, monospace', fontSize: '11px', marginTop: '4px', letterSpacing: '1px' }}>ARABIC CYBERSECURITY PLATFORM</p>
         </div>
 
-        {/* Card */}
         <div className={`fade-up card-glow auth-card ${shake ? 'do-shake' : ''}`}
           style={{ animationDelay: '0.1s', background: 'rgba(8,16,28,0.97)', border: '1px solid #1a3a50', borderRadius: '22px', padding: '36px 32px', width: '100%', maxWidth: '440px', backdropFilter: 'blur(24px)', position: 'relative', overflow: 'hidden' }}>
 
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, transparent, rgba(0,255,136,0.5), transparent)' }}></div>
 
-          {/* Tabs */}
           <div style={{ display: 'flex', background: 'rgba(5,10,15,0.7)', borderRadius: '12px', padding: '4px', marginBottom: '28px', position: 'relative', border: '1px solid #1a3a5055' }}>
             <div style={{ position: 'absolute', top: '4px', bottom: '4px', borderRadius: '9px', background: 'linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,255,136,0.05))', border: '1px solid rgba(0,255,136,0.25)', transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)', left: mode === 'login' ? '4px' : '50%', right: mode === 'login' ? '50%' : '4px' }} />
             <button className="tab-btn" onClick={() => { setMode('login'); setError(''); setSuccess(''); setTouched({}) }} style={{ color: mode === 'login' ? '#00ff88' : '#5a7a90', position: 'relative', zIndex: 1 }}>تسجيل الدخول</button>
             <button className="tab-btn" onClick={() => { setMode('register'); setError(''); setSuccess(''); setTouched({}) }} style={{ color: mode === 'register' ? '#00ff88' : '#5a7a90', position: 'relative', zIndex: 1 }}>حساب جديد</button>
           </div>
 
-          {/* Title */}
           <div style={{ marginBottom: '22px' }}>
             <h1 style={{ fontSize: '23px', fontWeight: '900', color: 'white', marginBottom: '5px' }}>
               {mode === 'login' ? '👋 أهلاً بعودتك!' : '🚀 انضم إلينا مجاناً'}
@@ -247,7 +320,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Fields */}
           <div key={mode}>
 
             {mode === 'register' && (
