@@ -284,29 +284,34 @@ export default function LandingPage() {
         .testimonial-card{background:#0a1520;border:1px solid #1a3a50;border-radius:16px;padding:24px;transition:all 0.35s;}
         .testimonial-card:hover{transform:translateY(-6px);border-color:#00ff8844;box-shadow:0 20px 50px rgba(0,255,136,0.08);}
         .live-stat{background:#0a1520;border:1px solid #00ff8822;border-radius:12px;padding:20px 24px;text-align:center;}
-        @media(max-width:768px){
+        /* ── موبايل: أقل من 640px ─────────────────────── */
+        @media(max-width:640px){
           .hero-grid{flex-direction:column!important;}
           .mock-card{display:none!important;}
-          .hero-title{font-size:34px!important;line-height:1.3!important;}
+          .hero-title{font-size:32px!important;line-height:1.25!important;}
           .hero-btns{flex-direction:column!important;}
           .hero-btns button{width:100%!important;}
           .stats-grid{grid-template-columns:repeat(2,1fr)!important;}
-          .features-grid{grid-template-columns:1fr!important;}
-          .steps-grid{grid-template-columns:1fr!important;}
-          .section-pad{padding:60px 20px!important;}
-          .hero-pad{padding:100px 20px 60px!important;}
+          .section-pad{padding:48px 16px!important;}
+          .hero-pad{padding:90px 16px 48px!important;}
           .nav-pad{padding:0 16px!important;}
           .nav-links{display:none!important;}
-          .cta-banner{padding:40px 20px!important;}
-          .screens-grid{grid-template-columns:1fr!important;}
-          .testimonials-grid{grid-template-columns:1fr!important;}
-          .steps-card{text-align:center!important;}
-          .live-stats-grid{grid-template-columns:repeat(2,1fr)!important;}
+          .cta-banner{padding:32px 16px!important;}
+          .stagger-grid{grid-template-columns:1fr!important;}
+          /* عكس ترتيب الخطوات على الجوال عشان يبدأ بـ 01 */
+          .steps-grid > div:nth-child(1){order:3;}
+          .steps-grid > div:nth-child(2){order:2;}
+          .steps-grid > div:nth-child(3){order:1;}
         }
-        @media(min-width:769px) and (max-width:1100px){
-          .features-grid{grid-template-columns:repeat(2,1fr)!important;}
+        /* ── تابلت: 641px – 1024px ───────────────────── */
+        @media(min-width:641px) and (max-width:1024px){
+          .hero-grid{flex-direction:column!important;}
+          .mock-card{display:none!important;}
           .hero-title{font-size:44px!important;}
-          .testimonials-grid{grid-template-columns:repeat(2,1fr)!important;}
+          .hero-pad{padding:100px 32px 60px!important;}
+          .section-pad{padding:60px 32px!important;}
+          .nav-links{display:none!important;}
+          .stagger-grid{grid-template-columns:repeat(2,1fr)!important;}
         }
       `}</style>
 
@@ -613,7 +618,7 @@ export default function LandingPage() {
               animation="scale"
               stagger={160}
               style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'24px', direction:'ltr' }}
-              className="stagger-grid"
+              className="stagger-grid steps-grid"
             >
               {[
                 { n:'01', color:'#00ff88', title:'سجّل مجاناً', desc:'أنشئ حسابك في ثوانٍ بإيميلك — لا بطاقة بنكية.' },
