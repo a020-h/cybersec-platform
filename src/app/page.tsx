@@ -113,10 +113,6 @@ function Stagger({
     </div>
   )
 }
-      ))}
-    </div>
-  )
-}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function LandingPage() {
