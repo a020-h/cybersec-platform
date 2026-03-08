@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 type User = { id: string; username: string; points: number; avatar: string; is_admin: boolean; created_at: string }
 type Lesson = { id: string; course_id: string; title: string; order_num: number }
 type CTFChallenge = { title: string; description: string; category: string; points: number; flag: string; difficulty: string; hints: string }
+type CourseStats = { course_id: string; completions: number; name: string; color: string }
 
 const COURSE_NAMES: Record<string, { name: string; color: string }> = {
   '00000000-0000-0000-0000-000000000001': { name: '🛡️ أساسيات الأمن', color: '#00ff88' },
@@ -16,6 +17,14 @@ const COURSE_NAMES: Record<string, { name: string; color: string }> = {
   '00000000-0000-0000-0000-000000000006': { name: '🔐 التشفير', color: '#ff6ec7' },
 }
 
+const POINT_RANGES = [
+  { label: 'مبتدئ', min: 0, max: 99, color: '#7090a8' },
+  { label: 'متوسط', min: 100, max: 299, color: '#00d4ff' },
+  { label: 'متقدم', min: 300, max: 599, color: '#a855f7' },
+  { label: 'خبير', min: 600, max: 999, color: '#ffd700' },
+  { label: 'أسطورة', min: 1000, max: Infinity, color: '#ff3366' },
+]
+
 export default function AdminPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -23,6 +32,9 @@ export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([])
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [stats, setStats] = useState({ totalUsers: 0, totalPoints: 0, totalLessons: 0, totalCompletions: 0 })
+  const [courseStats, setCourseStats] = useState<CourseStats[]>([])
+  const [levelDist, setLevelDist] = useState<{ label: string; count: number; color: string }[]>([])
+  const [topCompletors, setTopCompletors] = useState<{ username: string; avatar: string; count: number }[]>([])
   const [ctf, setCTF] = useState<CTFChallenge>({ title: '', description: '', category: 'web', points: 50, flag: '', difficulty: 'سهل', hints: '' })
   const [msg, setMsg] = useState('')
   const [msgType, setMsgType] = useState<'success' | 'error'>('success')
@@ -45,9 +57,51 @@ export default function AdminPage() {
 
   const loadAll = async () => {
     const { data: usersData } = await supabase.from('profiles').select('*').order('points', { ascending: false })
-    if (usersData) setUsers(usersData)
+    if (usersData) {
+      setUsers(usersData)
+      // Level distribution
+      const dist = POINT_RANGES.map(r => ({
+        label: r.label,
+        color: r.color,
+        count: usersData.filter(u => u.points >= r.min && u.points <= r.max).length
+      }))
+      setLevelDist(dist)
+    }
+
     const { data: lessonsData } = await supabase.from('lessons').select('id, course_id, title, order_num').order('course_id').order('order_num')
     if (lessonsData) setLessons(lessonsData)
+
+    // Course completions stats
+    const { data: completionsData } = await supabase.from('lesson_completions').select('course_id')
+    if (completionsData) {
+      const counts: Record<string, number> = {}
+      completionsData.forEach(c => {
+        counts[c.course_id] = (counts[c.course_id] || 0) + 1
+      })
+      const cs = Object.entries(COURSE_NAMES).map(([id, info]) => ({
+        course_id: id,
+        name: info.name,
+        color: info.color,
+        completions: counts[id] || 0,
+      })).sort((a, b) => b.completions - a.completions)
+      setCourseStats(cs)
+    }
+
+    // Top completors
+    const { data: compByUser } = await supabase.from('lesson_completions').select('user_id')
+    if (compByUser && usersData) {
+      const userCounts: Record<string, number> = {}
+      compByUser.forEach(c => { userCounts[c.user_id] = (userCounts[c.user_id] || 0) + 1 })
+      const top = Object.entries(userCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([uid, count]) => {
+          const u = usersData.find(x => x.id === uid)
+          return { username: u?.username || 'مجهول', avatar: u?.avatar || '🧑‍💻', count }
+        })
+      setTopCompletors(top)
+    }
+
     const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
     const { data: pointsData } = await supabase.from('profiles').select('points')
     const { count: lessonsCount } = await supabase.from('lessons').select('*', { count: 'exact', head: true })
@@ -124,6 +178,9 @@ export default function AdminPage() {
   const inp: React.CSSProperties = { width: '100%', background: 'rgba(5,10,15,0.8)', border: '1px solid #1a3a50', borderRadius: '10px', padding: '11px 15px', color: '#e0f0ff', fontFamily: 'Cairo, sans-serif', fontSize: '14px', outline: 'none', direction: 'rtl', transition: 'border-color 0.2s' }
   const lbl: React.CSSProperties = { color: '#7090a8', fontSize: '12px', marginBottom: '7px', display: 'block', fontFamily: 'Space Mono, monospace', letterSpacing: '0.5px' }
 
+  const maxCompletions = Math.max(...courseStats.map(c => c.completions), 1)
+  const maxLevelCount = Math.max(...levelDist.map(l => l.count), 1)
+
   const tabs = [
     { key: 'stats',   label: '📊', text: 'الإحصائيات' },
     { key: 'users',   label: '👥', text: 'المستخدمون' },
@@ -147,6 +204,7 @@ export default function AdminPage() {
         @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
         @keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+        @keyframes barGrow{from{width:0}to{width:var(--w)}}
         .fade-up{animation:fadeUp 0.45s cubic-bezier(0.4,0,0.2,1) both;}
         .tab-btn{transition:all 0.25s cubic-bezier(0.4,0,0.2,1);cursor:pointer;border:none;font-family:'Cairo',sans-serif;}
         .row-hover{transition:background 0.2s;}
@@ -154,9 +212,11 @@ export default function AdminPage() {
         .act-btn{transition:all 0.2s;cursor:pointer;font-family:'Cairo',sans-serif;}
         .act-btn:hover{filter:brightness(1.15);transform:translateY(-1px);}
         input:focus,select:focus,textarea:focus{border-color:rgba(255,51,102,0.4)!important;box-shadow:0 0 0 3px rgba(255,51,102,0.06);}
+        .bar-fill{animation:barGrow 1s cubic-bezier(0.4,0,0.2,1) both;}
         @media(max-width:768px){
           .stats-grid{grid-template-columns:repeat(2,1fr)!important;}
           .ctf-grid{grid-template-columns:1fr!important;}
+          .charts-grid{grid-template-columns:1fr!important;}
           .page-wrap{padding:80px 16px 40px!important;}
           .navbar{padding:0 16px!important;}
           .tab-text{display:none;}
@@ -207,7 +267,8 @@ export default function AdminPage() {
               <h2 style={{ color: 'white', fontWeight: '900', fontSize: '20px' }}>إحصائيات المنصة</h2>
             </div>
 
-            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px', marginBottom: '30px' }}>
+            {/* KPI Cards */}
+            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px', marginBottom: '28px' }}>
               {[
                 { label: 'المستخدمون', value: stats.totalUsers, icon: '👥', color: '#00ff88', sub: 'مسجل' },
                 { label: 'إجمالي النقاط', value: stats.totalPoints.toLocaleString(), icon: '⭐', color: '#ffd700', sub: 'نقطة' },
@@ -223,20 +284,111 @@ export default function AdminPage() {
               ))}
             </div>
 
-            {/* Top users */}
-            <div style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '18px', padding: '26px', backdropFilter: 'blur(10px)' }}>
-              <p style={{ color: '#7090a8', fontFamily: 'Space Mono, monospace', fontSize: '12px', letterSpacing: '1px', marginBottom: '18px' }}>// TOP USERS</p>
-              {users.slice(0, 5).map((u, i) => (
-                <div key={u.id} className="row-hover" style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 14px', borderRadius: '10px', marginBottom: '6px', background: i === 0 ? 'rgba(255,215,0,0.04)' : 'transparent' }}>
-                  <span style={{ fontFamily: 'Space Mono, monospace', color: i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#3a5a70', fontWeight: '700', minWidth: '28px', fontSize: '18px' }}>
-                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`}
-                  </span>
-                  <span style={{ fontSize: '20px' }}>{u.avatar || '🧑‍💻'}</span>
-                  <span style={{ color: 'white', fontWeight: '700', flex: 1 }}>{u.username || 'بدون اسم'}</span>
-                  {u.is_admin && <span style={{ background: 'rgba(255,51,102,0.12)', border: '1px solid rgba(255,51,102,0.25)', color: '#ff3366', padding: '2px 10px', borderRadius: '100px', fontSize: '10px', fontFamily: 'Space Mono, monospace' }}>ADMIN</span>}
-                  <span style={{ fontFamily: 'Space Mono, monospace', color: '#ffd700', fontWeight: '700', fontSize: '14px' }}>{u.points} ⭐</span>
+            {/* Charts Row */}
+            <div className="charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+
+              {/* Course Completions Bar Chart */}
+              <div style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '18px', padding: '26px', backdropFilter: 'blur(10px)' }}>
+                <p style={{ color: '#7090a8', fontFamily: 'Space Mono, monospace', fontSize: '11px', letterSpacing: '1px', marginBottom: '20px' }}>// إتمامات الدروس حسب المسار</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {courseStats.map((c, i) => (
+                    <div key={c.course_id}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <span style={{ color: '#a0c0d8', fontSize: '12px', fontFamily: 'Cairo, sans-serif' }}>{c.name}</span>
+                        <span style={{ color: c.color, fontFamily: 'Space Mono, monospace', fontSize: '12px', fontWeight: '700' }}>{c.completions}</span>
+                      </div>
+                      <div style={{ background: 'rgba(26,58,80,0.4)', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+                        <div
+                          className="bar-fill"
+                          style={{
+                            height: '100%',
+                            borderRadius: '4px',
+                            background: `linear-gradient(90deg, ${c.color}99, ${c.color})`,
+                            width: `${(c.completions / maxCompletions) * 100}%`,
+                            boxShadow: `0 0 8px ${c.color}55`,
+                            ['--w' as any]: `${(c.completions / maxCompletions) * 100}%`,
+                            animationDelay: `${i * 0.1}s`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              {/* Level Distribution */}
+              <div style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '18px', padding: '26px', backdropFilter: 'blur(10px)' }}>
+                <p style={{ color: '#7090a8', fontFamily: 'Space Mono, monospace', fontSize: '11px', letterSpacing: '1px', marginBottom: '20px' }}>// توزيع مستويات المستخدمين</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {levelDist.map((l, i) => (
+                    <div key={l.label}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <span style={{ color: l.color, fontSize: '12px', fontFamily: 'Cairo, sans-serif', fontWeight: '700' }}>{l.label}</span>
+                        <span style={{ color: '#a0c0d8', fontFamily: 'Space Mono, monospace', fontSize: '12px' }}>{l.count} مستخدم</span>
+                      </div>
+                      <div style={{ background: 'rgba(26,58,80,0.4)', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+                        <div
+                          className="bar-fill"
+                          style={{
+                            height: '100%',
+                            borderRadius: '4px',
+                            background: `linear-gradient(90deg, ${l.color}77, ${l.color})`,
+                            width: `${(l.count / maxLevelCount) * 100}%`,
+                            boxShadow: `0 0 8px ${l.color}44`,
+                            ['--w' as any]: `${(l.count / maxLevelCount) * 100}%`,
+                            animationDelay: `${i * 0.08}s`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Avg points */}
+                <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #1a3a50', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#7090a8', fontSize: '12px', fontFamily: 'Space Mono, monospace' }}>متوسط النقاط</span>
+                  <span style={{ color: '#ffd700', fontFamily: 'Space Mono, monospace', fontSize: '13px', fontWeight: '700' }}>
+                    {stats.totalUsers > 0 ? Math.round(stats.totalPoints / stats.totalUsers) : 0} ⭐
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Top completors + Top users row */}
+            <div className="charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+
+              {/* Top completors */}
+              <div style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '18px', padding: '26px', backdropFilter: 'blur(10px)' }}>
+                <p style={{ color: '#7090a8', fontFamily: 'Space Mono, monospace', fontSize: '11px', letterSpacing: '1px', marginBottom: '18px' }}>// الأكثر إتماماً للدروس</p>
+                {topCompletors.length === 0 ? (
+                  <p style={{ color: '#3a5a70', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>لا توجد بيانات بعد</p>
+                ) : topCompletors.map((u, i) => (
+                  <div key={i} className="row-hover" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '10px', marginBottom: '4px' }}>
+                    <span style={{ fontFamily: 'Space Mono, monospace', color: i === 0 ? '#ffd700' : '#3a5a70', fontSize: '16px', minWidth: '24px' }}>
+                      {i === 0 ? '🏆' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`}
+                    </span>
+                    <span style={{ fontSize: '18px' }}>{u.avatar}</span>
+                    <span style={{ flex: 1, color: 'white', fontWeight: '700', fontSize: '14px' }}>{u.username}</span>
+                    <span style={{ fontFamily: 'Space Mono, monospace', color: '#00ff88', fontSize: '12px', fontWeight: '700' }}>{u.count} درس</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Top points */}
+              <div style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '18px', padding: '26px', backdropFilter: 'blur(10px)' }}>
+                <p style={{ color: '#7090a8', fontFamily: 'Space Mono, monospace', fontSize: '11px', letterSpacing: '1px', marginBottom: '18px' }}>// أعلى النقاط</p>
+                {users.slice(0, 5).map((u, i) => (
+                  <div key={u.id} className="row-hover" style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '10px 12px', borderRadius: '10px', marginBottom: '4px', background: i === 0 ? 'rgba(255,215,0,0.04)' : 'transparent' }}>
+                    <span style={{ fontFamily: 'Space Mono, monospace', color: i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#3a5a70', fontWeight: '700', minWidth: '28px', fontSize: '18px' }}>
+                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`}
+                    </span>
+                    <span style={{ fontSize: '20px' }}>{u.avatar || '🧑‍💻'}</span>
+                    <span style={{ color: 'white', fontWeight: '700', flex: 1, fontSize: '14px' }}>{u.username || 'بدون اسم'}</span>
+                    {u.is_admin && <span style={{ background: 'rgba(255,51,102,0.12)', border: '1px solid rgba(255,51,102,0.25)', color: '#ff3366', padding: '2px 8px', borderRadius: '100px', fontSize: '9px', fontFamily: 'Space Mono, monospace' }}>ADMIN</span>}
+                    <span style={{ fontFamily: 'Space Mono, monospace', color: '#ffd700', fontWeight: '700', fontSize: '13px' }}>{u.points} ⭐</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -300,7 +452,6 @@ export default function AdminPage() {
               <span style={{ color: '#7090a8', fontFamily: 'Space Mono, monospace', fontSize: '12px' }}>{lessons.length} LESSONS</span>
             </div>
 
-            {/* Edit modal */}
             {editingLesson && (
               <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, backdropFilter: 'blur(10px)' }}>
                 <div style={{ background: '#0a1520', border: '1px solid rgba(255,51,102,0.3)', borderRadius: '20px', padding: '36px', width: '480px', position: 'relative', overflow: 'hidden' }} dir="rtl">
@@ -317,11 +468,11 @@ export default function AdminPage() {
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {Object.entries(COURSE_NAMES).map(([courseId, { name, color }]) => {
-                const cl = lessons.filter(l => l.course_id === courseId)
+              {Object.entries(COURSE_NAMES).map(([cId, { name, color }]) => {
+                const cl = lessons.filter(l => l.course_id === cId)
                 if (!cl.length) return null
                 return (
-                  <div key={courseId} style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '16px', overflow: 'hidden', backdropFilter: 'blur(10px)' }}>
+                  <div key={cId} style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '16px', overflow: 'hidden', backdropFilter: 'blur(10px)' }}>
                     <div style={{ padding: '14px 22px', background: 'rgba(8,15,24,0.7)', borderBottom: '1px solid #1a3a50', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
                       <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '3px', background: color }}></div>
                       <span style={{ color, fontFamily: 'Space Mono, monospace', fontWeight: '700', fontSize: '13px' }}>{name}</span>
@@ -409,7 +560,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Preview */}
               {ctf.title && (
                 <div style={{ background: 'rgba(5,10,15,0.7)', border: '1px solid rgba(255,51,102,0.2)', borderRadius: '12px', padding: '18px', marginBottom: '22px' }}>
                   <p style={{ color: '#7090a8', fontSize: '11px', fontFamily: 'Space Mono, monospace', letterSpacing: '1px', marginBottom: '12px' }}>// PREVIEW</p>
