@@ -120,13 +120,13 @@ export default function AdminPage() {
   }
 
   const deleteUser = async (userId: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذا المستخدم؟')) return
-    setDeletingUser(userId)
-    const { error } = await supabase.from('profiles').delete().eq('id', userId)
-    if (error) showMsg('فشل الحذف: ' + error.message, 'error')
-    else { showMsg('تم حذف المستخدم ✓'); await loadAll() }
-    setDeletingUser(null)
-  }
+  if (!confirm('هل أنت متأكد من حذف هذا المستخدم؟')) return
+  setDeletingUser(userId)
+  const { error } = await supabase.rpc('delete_user', { user_id: userId })
+  if (error) showMsg('فشل الحذف: ' + error.message, 'error')
+  else { showMsg('تم حذف المستخدم ✓'); await loadAll() }
+  setDeletingUser(null)
+}
 
   const toggleAdmin = async (userId: string, currentVal: boolean) => {
     const { error } = await supabase.from('profiles').update({ is_admin: !currentVal }).eq('id', userId)
