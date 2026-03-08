@@ -229,7 +229,10 @@ const finishQuizNoQuestions = async () => {
   const handleAnswer = (opt: string) => {
     if (answered) return
     setSelected(opt); setAnswered(true)
-    if (opt === questions[currentQ].correct_answer) setQuizScore(s => s + 1)
+    const qCorrect = questions[currentQ].correct_answer
+const optText = questions[currentQ][`option_${opt.toLowerCase()}`]
+if (opt.toUpperCase() === qCorrect?.toUpperCase() || optText?.trim() === qCorrect?.trim()) 
+  setQuizScore(s => s + 1)
   }
 
   const nextQuestion = () => {
@@ -401,7 +404,10 @@ const finishQuizNoQuestions = async () => {
                 <div>
                   {['A', 'B', 'C', 'D'].map(opt => {
                     const text = questions[currentQ][`option_${opt.toLowerCase()}`]
-                    const isCorrect = opt.toUpperCase() === questions[currentQ].correct_answer?.toUpperCase()
+                    const qCorrect = questions[currentQ].correct_answer
+const optText = questions[currentQ][`option_${opt.toLowerCase()}`]
+const isCorrect = opt.toUpperCase() === qCorrect?.toUpperCase() || 
+                  optText?.trim() === qCorrect?.trim()
                     const isSelected = opt === selected
                     let cls = 'opt-btn'
                     if (answered) {
