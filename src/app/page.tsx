@@ -1,121 +1,8 @@
 'use client'
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
-// ─── Scroll Animation Hook ───────────────────────────────────────────────────
-function useReveal(options: { threshold?: number; rootMargin?: string } = {}) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.unobserve(el) } },
-      { threshold: options.threshold ?? 0.12, rootMargin: options.rootMargin ?? '0px 0px -60px 0px' }
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
-  return { ref, visible }
-}
-
-type AnimType = 'up' | 'down' | 'left' | 'right' | 'scale' | 'fade' | 'flip'
-
-function Reveal({
-  children, animation = 'up', delay = 0, duration = 650,
-  style = {}, className = ''
-}: {
-  children: React.ReactNode
-  animation?: AnimType
-  delay?: number
-  duration?: number
-  style?: React.CSSProperties
-  className?: string
-}) {
-  const { ref, visible } = useReveal()
-  const hidden: Record<AnimType, React.CSSProperties> = {
-    up:    { opacity: 0, transform: 'translateY(48px)' },
-    down:  { opacity: 0, transform: 'translateY(-48px)' },
-    left:  { opacity: 0, transform: 'translateX(60px)' },
-    right: { opacity: 0, transform: 'translateX(-60px)' },
-    scale: { opacity: 0, transform: 'scale(0.82)' },
-    fade:  { opacity: 0 },
-    flip:  { opacity: 0, transform: 'perspective(700px) rotateX(22deg) translateY(32px)' },
-  }
-  const shown: Record<AnimType, React.CSSProperties> = {
-    up:    { opacity: 1, transform: 'translateY(0)' },
-    down:  { opacity: 1, transform: 'translateY(0)' },
-    left:  { opacity: 1, transform: 'translateX(0)' },
-    right: { opacity: 1, transform: 'translateX(0)' },
-    scale: { opacity: 1, transform: 'scale(1)' },
-    fade:  { opacity: 1 },
-    flip:  { opacity: 1, transform: 'perspective(700px) rotateX(0deg) translateY(0)' },
-  }
-  return (
-    <div ref={ref} className={className} style={{
-      ...(visible ? shown[animation] : hidden[animation]),
-      transition: `all ${duration}ms cubic-bezier(0.22,1,0.36,1) ${delay}ms`,
-      willChange: 'transform, opacity',
-      ...style,
-    }}>
-      {children}
-    </div>
-  )
-}
-
-// Stagger wrapper — each child appears with increasing delay
-function Stagger({
-  children, animation = 'up', stagger = 90, delay = 0, duration = 550,
-  style = {}, itemStyle = {}, className = ''
-}: {
-  children: React.ReactNode[]
-  animation?: AnimType
-  stagger?: number
-  delay?: number
-  duration?: number
-  style?: React.CSSProperties
-  itemStyle?: React.CSSProperties
-  className?: string
-}) {
-  const { ref, visible } = useReveal()
-  const hidden: Record<AnimType, React.CSSProperties> = {
-    up:    { opacity: 0, transform: 'translateY(40px)' },
-    down:  { opacity: 0, transform: 'translateY(-40px)' },
-    left:  { opacity: 0, transform: 'translateX(50px)' },
-    right: { opacity: 0, transform: 'translateX(-50px)' },
-    scale: { opacity: 0, transform: 'scale(0.85)' },
-    fade:  { opacity: 0 },
-    flip:  { opacity: 0, transform: 'perspective(600px) rotateX(18deg)' },
-  }
-  const shown: Record<AnimType, React.CSSProperties> = {
-    up:    { opacity: 1, transform: 'translateY(0)' },
-    down:  { opacity: 1, transform: 'translateY(0)' },
-    left:  { opacity: 1, transform: 'translateX(0)' },
-    right: { opacity: 1, transform: 'translateX(0)' },
-    scale: { opacity: 1, transform: 'scale(1)' },
-    fade:  { opacity: 1 },
-    flip:  { opacity: 1, transform: 'perspective(600px) rotateX(0deg)' },
-  }
-  // ✅ الـ grid style يُطبَّق على الـ wrapper مباشرة
-  // كل child يأخذ animation بدون div وسيط يكسر الـ grid
-  return (
-    <div ref={ref} style={style} className={className}>
-      {children.map((child, i) => (
-        <div key={i} style={{
-          ...(visible ? shown[animation] : hidden[animation]),
-          transition: `all ${duration}ms cubic-bezier(0.22,1,0.36,1) ${delay + i * stagger}ms`,
-          willChange: 'transform, opacity',
-          ...itemStyle,
-        }}>
-          {child}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const router = useRouter()
   const [checking, setChecking] = useState(true)
@@ -135,6 +22,7 @@ export default function LandingPage() {
     })
   }, [])
 
+  // Fetch live stats
   useEffect(() => {
     if (checking) return
     const fetchStats = async () => {
@@ -149,6 +37,7 @@ export default function LandingPage() {
     fetchStats()
   }, [checking])
 
+  // Matrix rain
   useEffect(() => {
     if (checking) return
     const canvas = canvasRef.current
@@ -166,7 +55,8 @@ export default function LandingPage() {
       ctx.fillRect(0, 0, canvas.width, canvas.height)
       drops.forEach((y, i) => {
         const char = chars[Math.floor(Math.random() * chars.length)]
-        ctx.fillStyle = `rgba(0,255,136,${Math.random() * 0.5 + 0.1})`
+        const alpha = Math.random() * 0.5 + 0.1
+        ctx.fillStyle = `rgba(0,255,136,${alpha})`
         ctx.font = '13px monospace'
         ctx.fillText(char, i * 22, y * 22)
         if (y * 22 > canvas.height && Math.random() > 0.975) drops[i] = 0
@@ -177,6 +67,7 @@ export default function LandingPage() {
     return () => { clearInterval(interval); window.removeEventListener('resize', resize) }
   }, [checking])
 
+  // Particles
   useEffect(() => {
     if (checking) return
     const canvas = particlesRef.current
@@ -186,9 +77,11 @@ export default function LandingPage() {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
     const particles = Array.from({ length: 60 }, () => ({
-      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
       r: Math.random() * 1.5 + 0.5,
-      dx: (Math.random() - 0.5) * 0.4, dy: (Math.random() - 0.5) * 0.4,
+      dx: (Math.random() - 0.5) * 0.4,
+      dy: (Math.random() - 0.5) * 0.4,
       color: Math.random() > 0.6 ? '#00ff88' : Math.random() > 0.5 ? '#00d4ff' : '#a855f7'
     }))
     const animate = () => {
@@ -215,6 +108,7 @@ export default function LandingPage() {
     animate()
   }, [checking])
 
+  // Typing effect
   useEffect(() => {
     if (checking) return
     const texts = ['اختبار الاختراق...', 'تحليل الشبكات...', 'كسر التشفير...', 'CTF Challenges...', 'Ethical Hacking...']
@@ -235,7 +129,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     const onScroll = () => setScrollY(window.scrollY)
-    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
@@ -262,11 +156,14 @@ export default function LandingPage() {
         ::-webkit-scrollbar{width:6px;} ::-webkit-scrollbar-track{background:#0a1520;} ::-webkit-scrollbar-thumb{background:#1a3a50;border-radius:3px;}
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(36px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
         @keyframes glow{0%,100%{text-shadow:0 0 20px #00ff8855}50%{text-shadow:0 0 50px #00ff88bb,0 0 100px #00ff8833}}
         @keyframes float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-16px) rotate(1deg)}}
         @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
         @keyframes borderPulse{0%,100%{border-color:#00ff8822;box-shadow:0 0 0 rgba(0,255,136,0)}50%{border-color:#00ff8866;box-shadow:0 0 30px rgba(0,255,136,0.1)}}
+        @keyframes countUp{from{opacity:0;transform:scale(0.5)}to{opacity:1;transform:scale(1)}}
         @keyframes livePulse{0%,100%{opacity:1}50%{opacity:0.4}}
+        @keyframes slideInRight{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
         @keyframes starTwinkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.7;transform:scale(0.9)}}
         .fade-up{animation:fadeUp 0.8s cubic-bezier(0.4,0,0.2,1) both;}
         .glow-text{animation:glow 3s ease-in-out infinite;}
@@ -277,41 +174,36 @@ export default function LandingPage() {
         .cta-secondary:hover{border-color:#00ff8866;color:#00ff88;transform:translateY(-4px);}
         .feature-card{background:#0a1520;border:1px solid #1a3a50;border-radius:16px;padding:28px;transition:all 0.35s;cursor:default;}
         .feature-card:hover{transform:translateY(-8px);border-color:#00ff8844;box-shadow:0 24px 60px rgba(0,255,136,0.08);}
+        .stat-num{animation:countUp 0.6s cubic-bezier(0.4,0,0.2,1) both;}
         .mock-screen{background:#0a1520;border:1px solid #1a3a50;border-radius:12px;overflow:hidden;animation:borderPulse 3s ease-in-out infinite;}
         .nav-cta{background:#00ff88;color:#050a0f;border:none;padding:8px 20px;border-radius:100px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:900;cursor:pointer;transition:all 0.25s;}
         .nav-cta:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,255,136,0.3);}
-        .badge-pill{display:inline-flex;align-items:center;gap:6px;background:#0a1520;border:1px solid #00ff8822;border-radius:100px;padding:5px 14px;}
+        .badge{display:inline-flex;align-items:center;gap:6px;background:#0a1520;border:1px solid #00ff8822;border-radius:100px;padding:5px 14px;}
         .testimonial-card{background:#0a1520;border:1px solid #1a3a50;border-radius:16px;padding:24px;transition:all 0.35s;}
         .testimonial-card:hover{transform:translateY(-6px);border-color:#00ff8844;box-shadow:0 20px 50px rgba(0,255,136,0.08);}
         .live-stat{background:#0a1520;border:1px solid #00ff8822;border-radius:12px;padding:20px 24px;text-align:center;}
-        /* ── موبايل: أقل من 640px ─────────────────────── */
-        @media(max-width:640px){
+        @media(max-width:768px){
           .hero-grid{flex-direction:column!important;}
           .mock-card{display:none!important;}
-          .hero-title{font-size:32px!important;line-height:1.25!important;}
+          .hero-title{font-size:34px!important;line-height:1.3!important;}
           .hero-btns{flex-direction:column!important;}
           .hero-btns button{width:100%!important;}
           .stats-grid{grid-template-columns:repeat(2,1fr)!important;}
-          .section-pad{padding:48px 16px!important;}
-          .hero-pad{padding:90px 16px 48px!important;}
+          .features-grid{grid-template-columns:1fr!important;}
+          .steps-grid{grid-template-columns:1fr!important;}
+          .section-pad{padding:60px 20px!important;}
+          .hero-pad{padding:100px 20px 60px!important;}
           .nav-pad{padding:0 16px!important;}
           .nav-links{display:none!important;}
-          .cta-banner{padding:32px 16px!important;}
-          .stagger-grid{grid-template-columns:1fr!important;}
-          /* عكس ترتيب الخطوات على الجوال عشان يبدأ بـ 01 */
-          .steps-grid > div:nth-child(1){order:3;}
-          .steps-grid > div:nth-child(2){order:2;}
-          .steps-grid > div:nth-child(3){order:1;}
+          .cta-banner{padding:40px 20px!important;}
+          .screens-grid{grid-template-columns:1fr!important;}
+          .testimonials-grid{grid-template-columns:1fr!important;}
+          .live-stats-grid{grid-template-columns:repeat(2,1fr)!important;}
         }
-        /* ── تابلت: 641px – 1024px ───────────────────── */
-        @media(min-width:641px) and (max-width:1024px){
-          .hero-grid{flex-direction:column!important;}
-          .mock-card{display:none!important;}
+        @media(min-width:769px) and (max-width:1100px){
+          .features-grid{grid-template-columns:repeat(2,1fr)!important;}
           .hero-title{font-size:44px!important;}
-          .hero-pad{padding:100px 32px 60px!important;}
-          .section-pad{padding:60px 32px!important;}
-          .nav-links{display:none!important;}
-          .stagger-grid{grid-template-columns:repeat(2,1fr)!important;}
+          .testimonials-grid{grid-template-columns:repeat(2,1fr)!important;}
         }
       `}</style>
 
@@ -341,11 +233,11 @@ export default function LandingPage() {
           </div>
         </nav>
 
-        {/* ═══ HERO — يظهر مباشرة بـ CSS animation (فوق الـ fold) ═══ */}
-        <section className="hero-pad" style={{ display:'flex', alignItems:'center', padding:'110px 48px 80px', maxWidth:'1280px', margin:'0 auto' }}>
+        {/* HERO */}
+        <section className="hero-pad" style={{ minHeight:'100vh', display:'flex', alignItems:'center', padding:'110px 48px 80px', maxWidth:'1280px', margin:'0 auto' }}>
           <div className="hero-grid" style={{ display:'flex', alignItems:'center', gap:'60px', width:'100%' }}>
             <div style={{ flex:1 }}>
-              <div className="fade-up badge-pill" style={{ marginBottom:'24px', animationDelay:'0s' }}>
+              <div className="fade-up badge" style={{ marginBottom:'24px', animationDelay:'0s' }}>
                 <span style={{ animation:'pulse 2s infinite', color:'#00ff88', fontSize:'9px' }}>●</span>
                 <span style={{ color:'#7090a8', fontSize:'12px', fontFamily:'monospace' }}>منصة الأمن السيبراني العربية #1</span>
               </div>
@@ -371,7 +263,7 @@ export default function LandingPage() {
                   { n:'8', label:'تحدي CTF', color:'#ff6b35' },
                   { n:'100%', label:'مجاني', color:'#ffd700' },
                 ].map((s,i) => (
-                  <div key={i} className="fade-up" style={{ animationDelay:`${0.5+i*0.1}s`, textAlign:'center', background:'#0a152088', border:'1px solid #1a3a50', borderRadius:'10px', padding:'12px 8px' }}>
+                  <div key={i} className="stat-num" style={{ animationDelay:`${0.5+i*0.1}s`, textAlign:'center', background:'#0a152088', border:'1px solid #1a3a50', borderRadius:'10px', padding:'12px 8px' }}>
                     <p style={{ fontFamily:'monospace', fontSize:'22px', fontWeight:'900', color:s.color, marginBottom:'3px' }}>{s.n}</p>
                     <p style={{ color:'#5a7a90', fontSize:'11px' }}>{s.label}</p>
                   </div>
@@ -379,7 +271,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Mock screen — hero لا يحتاج scroll trigger */}
+            {/* Mock screen */}
             <div className="mock-card float-card" style={{ width:'500px', flexShrink:0, position:'relative' }}>
               <div className="mock-screen" style={{ boxShadow:'0 40px 100px rgba(0,0,0,0.7), 0 0 60px rgba(0,255,136,0.05)' }}>
                 <div style={{ background:'#080f18', padding:'10px 16px', display:'flex', alignItems:'center', gap:'8px', borderBottom:'1px solid #1a3a50' }}>
@@ -400,9 +292,9 @@ export default function LandingPage() {
                     <p style={{ color:'white', fontWeight:'900', fontSize:'13px', marginBottom:'4px' }}>أهلاً، <span style={{ color:'#00ff88' }}>hacker</span> 👋</p>
                     <p style={{ color:'#5a7a90', fontSize:'10px', marginBottom:'10px' }}>أنت في المستوى 🔥 متوسط</p>
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'6px' }}>
-                      {[['150','⭐','#ffd700'],['6','📚','#00ff88'],['2','🎯','#00d4ff'],['67%','📈','#a855f7']].map(([v,ic,c],idx) => (
+                      {[['150','⭐','#ffd700'],['6','📚','#00ff88'],['2','🎯','#00d4ff'],['67%','📈','#a855f7']].map(([v,i,c],idx) => (
                         <div key={idx} style={{ background:'#0f1f30', borderRadius:'6px', padding:'6px', textAlign:'center' }}>
-                          <span style={{ fontSize:'12px' }}>{ic}</span>
+                          <span style={{ fontSize:'12px' }}>{i}</span>
                           <p style={{ color:c, fontFamily:'monospace', fontSize:'11px', fontWeight:'700' }}>{v}</p>
                         </div>
                       ))}
@@ -441,21 +333,21 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ═══ LIVE STATS — scroll reveal ═══ */}
-        <section style={{ padding:'0 48px 60px', maxWidth:'1200px', margin:'0 auto' }}>
-          <Reveal animation="fade" style={{ textAlign:'center', marginBottom:'32px' }}>
+        {/* ===== LIVE STATS ===== */}
+        <section style={{ padding:'0 48px 80px', maxWidth:'1200px', margin:'0 auto' }}>
+          <div className="fade-up" style={{ textAlign:'center', marginBottom:'32px' }}>
             <div style={{ display:'inline-flex', alignItems:'center', gap:'8px', background:'rgba(0,255,136,0.08)', border:'1px solid rgba(0,255,136,0.2)', borderRadius:'100px', padding:'6px 16px', marginBottom:'16px' }}>
               <span style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#00ff88', animation:'livePulse 1.5s infinite', display:'inline-block' }}></span>
               <span style={{ color:'#00ff88', fontSize:'12px', fontFamily:'monospace' }}>إحصائيات مباشرة</span>
             </div>
-          </Reveal>
-          <Stagger animation="scale" stagger={120} style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }} className="stagger-grid" itemStyle={{}}>
+          </div>
+          <div className="live-stats-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}>
             {[
               { value: liveUsers || '∞', label: 'مستخدم مسجّل', icon: '👥', color: '#00ff88', suffix: '+' },
               { value: liveLessons || '∞', label: 'درس مكتمل', icon: '✅', color: '#00d4ff', suffix: '+' },
               { value: livePoints > 1000 ? `${Math.floor(livePoints/1000)}k` : livePoints || '∞', label: 'نقطة مكتسبة', icon: '⭐', color: '#ffd700', suffix: '+' },
             ].map((stat, i) => (
-              <div key={i} className="live-stat" style={{}}>
+              <div key={i} className="live-stat fade-up" style={{ animationDelay:`${i*0.1}s` }}>
                 <div style={{ fontSize:'32px', marginBottom:'8px' }}>{stat.icon}</div>
                 <p style={{ fontFamily:'monospace', fontSize:'36px', fontWeight:'900', color:stat.color, lineHeight:1, marginBottom:'6px' }}>
                   {stat.value}{stat.value !== '∞' ? stat.suffix : ''}
@@ -463,22 +355,17 @@ export default function LandingPage() {
                 <p style={{ color:'#5a7a90', fontSize:'13px' }}>{stat.label}</p>
               </div>
             ))}
-          </Stagger>
+          </div>
         </section>
 
-        {/* ═══ SCREENS — scroll reveal ═══ */}
+        {/* SCREENS SECTION */}
         <section className="section-pad" style={{ padding:'80px 48px', background:'linear-gradient(180deg,transparent,#08111888,transparent)' }}>
           <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
-            <Reveal animation="up" style={{ textAlign:'center', marginBottom:'48px' }}>
+            <div className="fade-up" style={{ textAlign:'center', marginBottom:'48px' }}>
               <span style={{ color:'#00ff88', fontFamily:'monospace', fontSize:'13px' }}>// لقطات من المنصة</span>
               <h2 style={{ fontSize:'34px', fontWeight:'900', color:'white', marginTop:'8px' }}>شاهد المنصة بنفسك</h2>
-            </Reveal>
-            <Stagger
-              animation="flip"
-              stagger={150}
-              style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}
-              className="stagger-grid"
-            >
+            </div>
+            <div className="screens-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}>
               {[
                 { title:'تحديات CTF', desc:'8 تحديات يومية مع عداد تنازلي', icon:'🎯', color:'#ff6b35',
                   preview: (
@@ -521,7 +408,7 @@ export default function LandingPage() {
                   )
                 },
               ].map((screen, i) => (
-                <div key={i}>
+                <div key={i} className="fade-up" style={{ animationDelay:`${i*0.15}s` }}>
                   <div className="mock-screen" style={{ marginBottom:'12px' }}>
                     <div style={{ background:'#080f18', padding:'8px 12px', display:'flex', gap:'6px', alignItems:'center', borderBottom:'1px solid #1a3a50' }}>
                       {['#ff5f57','#febc2e','#28c840'].map(c => <span key={c} style={{ width:'8px', height:'8px', borderRadius:'50%', background:c }}></span>)}
@@ -534,23 +421,18 @@ export default function LandingPage() {
                   <p style={{ color:'#5a7a90', fontSize:'13px' }}>{screen.desc}</p>
                 </div>
               ))}
-            </Stagger>
+            </div>
           </div>
         </section>
 
-        {/* ═══ FEATURES — scroll reveal ═══ */}
+        {/* FEATURES */}
         <section className="section-pad" style={{ padding:'80px 48px' }}>
           <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
-            <Reveal animation="up" style={{ textAlign:'center', marginBottom:'48px' }}>
+            <div className="fade-up" style={{ textAlign:'center', marginBottom:'48px' }}>
               <span style={{ color:'#00ff88', fontFamily:'monospace', fontSize:'13px' }}>// المميزات</span>
               <h2 style={{ fontSize:'34px', fontWeight:'900', color:'white', marginTop:'8px' }}>كل ما تحتاجه في مكان واحد</h2>
-            </Reveal>
-            <Stagger
-              animation="up"
-              stagger={80}
-              style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}
-              className="stagger-grid"
-            >
+            </div>
+            <div className="features-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}>
               {[
                 { icon:'🛡️', color:'#00ff88', title:'6 مسارات تعليمية', desc:'من أساسيات الأمن لاختبار الاختراق والتشفير والهندسة الاجتماعية.' },
                 { icon:'🎯', color:'#ff6b35', title:'تحديات CTF يومية', desc:'8+ تحديات Capture The Flag مع عداد تنازلي ونقاط تنافسية.' },
@@ -559,32 +441,27 @@ export default function LandingPage() {
                 { icon:'🔐', color:'#a855f7', title:'محتوى عربي 100%', desc:'كل الشروحات والدروس بالعربي — لا حاجة لترجمة تقنية.' },
                 { icon:'🆓', color:'#00ff88', title:'مجاني بالكامل', desc:'لا اشتراكات ولا رسوم — كل المحتوى مفتوح للجميع.' },
               ].map((f,i) => (
-                <div key={i} className="feature-card">
+                <div key={i} className="feature-card fade-up" style={{ animationDelay:`${i*0.1}s` }}>
                   <div style={{ width:'50px', height:'50px', borderRadius:'12px', background:f.color+'15', border:`1px solid ${f.color}33`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px', marginBottom:'16px' }}>{f.icon}</div>
                   <h3 style={{ color:'white', fontWeight:'700', fontSize:'15px', marginBottom:'10px' }}>{f.title}</h3>
                   <p style={{ color:'#5a7a90', fontSize:'13px', lineHeight:'1.7' }}>{f.desc}</p>
                 </div>
               ))}
-            </Stagger>
+            </div>
           </div>
         </section>
 
-        {/* ═══ TESTIMONIALS — scroll reveal ═══ */}
+        {/* ===== TESTIMONIALS ===== */}
         <section className="section-pad" style={{ padding:'80px 48px', background:'linear-gradient(180deg,transparent,#08111888,transparent)' }}>
           <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
-            <Reveal animation="up" style={{ textAlign:'center', marginBottom:'48px' }}>
+            <div className="fade-up" style={{ textAlign:'center', marginBottom:'48px' }}>
               <span style={{ color:'#00ff88', fontFamily:'monospace', fontSize:'13px' }}>// آراء المتعلمين</span>
               <h2 style={{ fontSize:'34px', fontWeight:'900', color:'white', marginTop:'8px' }}>ماذا يقول مجتمعنا</h2>
               <p style={{ color:'#5a7a90', fontSize:'15px', marginTop:'12px' }}>انضم لآلاف المتعلمين الذين غيّروا مساراتهم المهنية</p>
-            </Reveal>
-            <Stagger
-              animation="left"
-              stagger={100}
-              style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'20px' }}
-              className="stagger-grid"
-            >
+            </div>
+            <div className="testimonials-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'20px' }}>
               {testimonials.map((t, i) => (
-                <div key={i} className="testimonial-card">
+                <div key={i} className="testimonial-card fade-up" style={{ animationDelay:`${i*0.1}s` }}>
                   <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'16px' }}>
                     <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'#0f1f30', border:'2px solid #00ff8844', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px' }}>{t.avatar}</div>
                     <div>
@@ -603,68 +480,58 @@ export default function LandingPage() {
                   <p style={{ color:'#7090a8', fontSize:'13px', lineHeight:'1.7', fontStyle:'italic' }}>"{t.text}"</p>
                 </div>
               ))}
-            </Stagger>
+            </div>
           </div>
         </section>
 
-        {/* ═══ HOW IT WORKS — scroll reveal ═══ */}
+        {/* HOW IT WORKS */}
         <section className="section-pad" style={{ padding:'80px 48px' }}>
           <div style={{ maxWidth:'1000px', margin:'0 auto' }}>
-            <Reveal animation="up" style={{ textAlign:'center', marginBottom:'48px' }}>
+            <div className="fade-up" style={{ textAlign:'center', marginBottom:'48px' }}>
               <span style={{ color:'#00ff88', fontFamily:'monospace', fontSize:'13px' }}>// كيف تبدأ</span>
               <h2 style={{ fontSize:'34px', fontWeight:'900', color:'white', marginTop:'8px' }}>3 خطوات فقط</h2>
-            </Reveal>
-            <Stagger
-              animation="scale"
-              stagger={160}
-              style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'24px', direction:'ltr' }}
-              className="stagger-grid steps-grid"
-            >
+            </div>
+            <div className="steps-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'24px' }}>
               {[
                 { n:'01', color:'#00ff88', title:'سجّل مجاناً', desc:'أنشئ حسابك في ثوانٍ بإيميلك — لا بطاقة بنكية.' },
                 { n:'02', color:'#00d4ff', title:'اختر مسارك', desc:'ابدأ بالمستوى المناسب — من المبتدئ للخبير.' },
                 { n:'03', color:'#ffd700', title:'تحدّ وتقدّم', desc:'أكمل الدروس، حل CTF، واكسب نقاطاً.' },
               ].map((s,i) => (
-                <div key={i} style={{ textAlign:'center', padding:'32px 24px', background:'#0a1520', border:`1px solid ${s.color}22`, borderRadius:'16px' }}>
+                <div key={i} className="fade-up" style={{ animationDelay:`${i*0.15}s`, textAlign:'center', padding:'32px 24px', background:'#0a1520', border:`1px solid ${s.color}22`, borderRadius:'16px' }}>
                   <div style={{ fontFamily:'monospace', fontSize:'52px', fontWeight:'900', color:s.color, opacity:0.25, marginBottom:'16px', lineHeight:1 }}>{s.n}</div>
                   <h3 style={{ color:'white', fontWeight:'700', fontSize:'17px', marginBottom:'12px' }}>{s.title}</h3>
                   <p style={{ color:'#5a7a90', fontSize:'14px', lineHeight:'1.7' }}>{s.desc}</p>
                 </div>
               ))}
-            </Stagger>
+            </div>
           </div>
         </section>
 
-        {/* ═══ CTA BANNER — scroll reveal ═══ */}
+        {/* CTA BANNER */}
         <section className="section-pad" style={{ padding:'80px 48px' }}>
           <div style={{ maxWidth:'800px', margin:'0 auto' }}>
-            <Reveal animation="scale" duration={800}>
-              <div className="cta-banner" style={{ background:'linear-gradient(135deg,#0f2a1a,#0a1a2e,#150a20)', border:'1px solid #00ff8822', borderRadius:'24px', padding:'64px 48px', textAlign:'center', position:'relative', overflow:'hidden' }}>
-                <div style={{ position:'absolute', top:'-80px', left:'50%', transform:'translateX(-50%)', width:'400px', height:'400px', background:'#00ff8806', borderRadius:'50%', filter:'blur(80px)', pointerEvents:'none' }}></div>
-                <p style={{ color:'#00ff88', fontFamily:'monospace', fontSize:'13px', marginBottom:'16px', position:'relative' }}>// ابدأ رحلتك</p>
-                <h2 style={{ fontSize:'38px', fontWeight:'900', color:'white', marginBottom:'16px', position:'relative' }}>جاهز تصبح خبيراً؟ 🚀</h2>
-                <p style={{ color:'#7090a8', fontSize:'16px', marginBottom:'36px', position:'relative' }}>انضم الآن وابدأ تعلّم الأمن السيبراني مجاناً</p>
-                <button className="cta-primary" onClick={() => router.push('/login')} style={{ fontSize:'18px', padding:'16px 48px', position:'relative' }}>🔐 ابدأ التعلّم مجاناً</button>
-              </div>
-            </Reveal>
+            <div className="fade-up cta-banner" style={{ background:'linear-gradient(135deg,#0f2a1a,#0a1a2e,#150a20)', border:'1px solid #00ff8822', borderRadius:'24px', padding:'64px 48px', textAlign:'center', position:'relative', overflow:'hidden' }}>
+              <div style={{ position:'absolute', top:'-80px', left:'50%', transform:'translateX(-50%)', width:'400px', height:'400px', background:'#00ff8806', borderRadius:'50%', filter:'blur(80px)', pointerEvents:'none' }}></div>
+              <p style={{ color:'#00ff88', fontFamily:'monospace', fontSize:'13px', marginBottom:'16px', position:'relative' }}>// ابدأ رحلتك</p>
+              <h2 style={{ fontSize:'38px', fontWeight:'900', color:'white', marginBottom:'16px', position:'relative' }}>جاهز تصبح خبيراً؟ 🚀</h2>
+              <p style={{ color:'#7090a8', fontSize:'16px', marginBottom:'36px', position:'relative' }}>انضم الآن وابدأ تعلّم الأمن السيبراني مجاناً</p>
+              <button className="cta-primary" onClick={() => router.push('/login')} style={{ fontSize:'18px', padding:'16px 48px', position:'relative' }}>🔐 ابدأ التعلّم مجاناً</button>
+            </div>
           </div>
         </section>
 
         {/* FOOTER */}
-        <Reveal animation="fade">
-          <footer style={{ borderTop:'1px solid #1a3a50', padding:'32px 48px', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'16px' }}>
-            <span style={{ fontFamily:'monospace', fontSize:'18px', fontWeight:'700', color:'#00ff88', letterSpacing:'2px' }}>🔐 CYBERعربي</span>
-            <p style={{ color:'#3a5a70', fontSize:'13px' }}>منصة الأمن السيبراني العربية — تعلّم، تحدّ، تقدّم</p>
-            <div style={{ display:'flex', gap:'16px' }}>
-              {['المميزات','الدروس','CTF'].map(l => (
-                <button key={l} onClick={() => router.push('/login')} style={{ background:'none', border:'none', color:'#3a5a70', fontSize:'13px', cursor:'pointer', fontFamily:'Cairo,sans-serif', transition:'color 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.color='#00ff88'}
-                  onMouseLeave={e => e.currentTarget.style.color='#3a5a70'}>{l}</button>
-              ))}
-            </div>
-          </footer>
-        </Reveal>
-
+        <footer style={{ borderTop:'1px solid #1a3a50', padding:'32px 48px', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'16px' }}>
+          <span style={{ fontFamily:'monospace', fontSize:'18px', fontWeight:'700', color:'#00ff88', letterSpacing:'2px' }}>🔐 CYBERعربي</span>
+          <p style={{ color:'#3a5a70', fontSize:'13px' }}>منصة الأمن السيبراني العربية — تعلّم، تحدّ، تقدّم</p>
+          <div style={{ display:'flex', gap:'16px' }}>
+            {['المميزات','الدروس','CTF'].map(l => (
+              <button key={l} onClick={() => router.push('/login')} style={{ background:'none', border:'none', color:'#3a5a70', fontSize:'13px', cursor:'pointer', fontFamily:'Cairo,sans-serif', transition:'color 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.color='#00ff88'}
+                onMouseLeave={e => e.currentTarget.style.color='#3a5a70'}>{l}</button>
+            ))}
+          </div>
+        </footer>
       </div>
     </>
   )
