@@ -15,6 +15,10 @@ const courses = [
   { id: 4, title: 'تحليل البرمجيات الخبيثة', level: 'متقدم', icon: '🦠', lessons: 4, color: '#ff3366', bg: 'linear-gradient(135deg,#200a0a,#180505)' },
   { id: 5, title: 'الهندسة الاجتماعية', level: 'متوسط', icon: '🎭', lessons: 3, color: '#ffd700', bg: 'linear-gradient(135deg,#1a1000,#120a00)' },
   { id: 6, title: 'التشفير وعلم الكريبتو', level: 'متقدم', icon: '🔐', lessons: 3, color: '#ff6ec7', bg: 'linear-gradient(135deg,#200a18,#180510)' },
+{ id: 7, title: 'أمن السحابة', level: 'متوسط', icon: '☁️', lessons: 4, color: '#38bdf8', bg: 'linear-gradient(135deg,#0a1828,#050e1a)', isNew: true },
+  { id: 8, title: 'أمن تطبيقات الويب', level: 'متوسط', icon: '🌐', lessons: 4, color: '#fb923c', bg: 'linear-gradient(135deg,#1a0e05,#120a03)', isNew: true },
+  { id: 9, title: 'الذكاء الاصطناعي والأمن', level: 'متقدم', icon: '🤖', lessons: 3, color: '#c084fc', bg: 'linear-gradient(135deg,#160a28,#0e0518)', isNew: true },
+  { id: 10, title: 'الفورنزيك الرقمي', level: 'متقدم', icon: '🕵️', lessons: 4, color: '#34d399', bg: 'linear-gradient(135deg,#0a1e14,#05120a)', isNew: true },
 ]
 
 const getLevel = (points: number) => {

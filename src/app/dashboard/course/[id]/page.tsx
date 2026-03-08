@@ -13,6 +13,10 @@ const DB_COURSE_IDS: Record<string, string> = {
   '4': '00000000-0000-0000-0000-000000000004',
   '5': '00000000-0000-0000-0000-000000000005',
   '6': '00000000-0000-0000-0000-000000000006',
+  '7': '00000000-0000-0000-0000-000000000007',
+  '8': '00000000-0000-0000-0000-000000000008',
+  '9': '00000000-0000-0000-0000-000000000009',
+  '10': '00000000-0000-0000-0000-000000000010',
 }
 
 const staticCourses: Record<string, { title: string; icon: string; color: string }> = {
@@ -22,6 +26,10 @@ const staticCourses: Record<string, { title: string; icon: string; color: string
   '4': { title: 'تحليل البرمجيات الخبيثة', icon: '🦠', color: '#ff3366' },
   '5': { title: 'الهندسة الاجتماعية', icon: '🎭', color: '#ffd700' },
   '6': { title: 'التشفير وعلم الكريبتو', icon: '🔐', color: '#ff6ec7' },
+'7': { title: 'أمن السحابة', icon: '☁️', color: '#38bdf8' },
+  '8': { title: 'أمن تطبيقات الويب', icon: '🌐', color: '#fb923c' },
+  '9': { title: 'الذكاء الاصطناعي والأمن', icon: '🤖', color: '#c084fc' },
+  '10': { title: 'الفورنزيك الرقمي', icon: '🕵️', color: '#34d399' },
 }
 
 export default function CoursePage({ params }: { params: Promise<{ id: string }> }) {
