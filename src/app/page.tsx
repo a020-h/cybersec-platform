@@ -521,7 +521,7 @@ export default function LandingPage() {
         </section>
 
         {/* FOOTER */}
-        <footer style={{ borderTop:'1px solid #1a3a50', padding:'31px 48px', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'16px' }}>
+        <footer style={{ borderTop:'1px solid #1a3a50', padding:'32px 48px', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'16px' }}>
           <span style={{ fontFamily:'monospace', fontSize:'18px', fontWeight:'700', color:'#00ff88', letterSpacing:'2px' }}>🔐 CYBERعربي</span>
           <p style={{ color:'#3a5a70', fontSize:'13px' }}>منصة الأمن السيبراني العربية — تعلّم، تحدّ، تقدّم</p>
           <div style={{ display:'flex', gap:'16px' }}>
