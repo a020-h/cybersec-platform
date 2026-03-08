@@ -178,18 +178,65 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
   }
 
   const startQuiz = async () => {
-    if (!currentLesson || currentLesson.id === 'demo') return
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/questions?lesson_id=eq.${currentLesson.id}`,
-      { headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${sessionToken}` } }
-    )
-    const data = await res.json()
-    if (data?.length > 0) {
-      setQuestions(data); setCurrentQ(0); setSelected(null)
-      setAnswered(false); setQuizScore(0); setQuizDone(false); setShowQuiz(true)
+  if (!currentLesson || currentLesson.id === 'demo') return
+  
+  // تحقق من sessionToken
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token || sessionToken
+  
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/questions?lesson_id=eq.${currentLesson.id}`,
+    { headers: { 
+        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 
+        'Authorization': `Bearer ${token}` 
+    }}
+  )
+  const data = await res.json()
+  
+  console.log('Questions found:', data) // للتشخيص
+  
+  if (data?.length > 0) {
+    setQuestions(data); setCurrentQ(0); setSelected(null)
+    setAnswered(false); setQuizScore(0); setQuizDone(false); setShowQuiz(true)
+  } else {
+    // لا يوجد أسئلة — أكمل الدرس مباشرة
+    if (!completed.has(currentLesson.id)) {
+      await finishQuizNoQuestions()
     }
   }
+}
 
+const finishQuizNoQuestions = async () => {
+  if (!user || completed.has(currentLesson.id)) return
+  
+  await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/lesson_completions`, {
+    method: 'POST',
+    headers: { 
+      'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 
+      'Authorization': `Bearer ${sessionToken}`, 
+      'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify({ user_id: user.id, course_id: courseId, lesson_id: currentLesson.id })
+  })
+
+  const freshProfile = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=points`,
+    { headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${sessionToken}` } }
+  )
+  const freshData = await freshProfile.json()
+  const newPoints = (freshData?.[0]?.points || 0) + 15
+
+  await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}`, {
+    method: 'PATCH',
+    headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 'Authorization': `Bearer ${sessionToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ points: newPoints })
+  })
+
+  setCompleted(new Set([...completed, currentLesson.id]))
+  setPoints(newPoints)
+  const idx = lessons.findIndex(l => l.id === currentLesson.id)
+  if (idx < lessons.length - 1) setCurrentLesson(lessons[idx + 1])
+}
   const handleAnswer = (opt: string) => {
     if (answered) return
     setSelected(opt); setAnswered(true)
