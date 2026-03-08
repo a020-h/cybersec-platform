@@ -9,6 +9,9 @@ export default function LandingPage() {
   const [visible, setVisible] = useState(false)
   const [matrixText, setMatrixText] = useState('')
   const [scrollY, setScrollY] = useState(0)
+  const [liveUsers, setLiveUsers] = useState(0)
+  const [liveLessons, setLiveLessons] = useState(0)
+  const [livePoints, setLivePoints] = useState(0)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const particlesRef = useRef<HTMLCanvasElement>(null)
 
@@ -18,6 +21,21 @@ export default function LandingPage() {
       else { setChecking(false); setTimeout(() => setVisible(true), 100) }
     })
   }, [])
+
+  // Fetch live stats
+  useEffect(() => {
+    if (checking) return
+    const fetchStats = async () => {
+      const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
+      const { count: lessonCount } = await supabase.from('lesson_completions').select('*', { count: 'exact', head: true })
+      const { data: pointsData } = await supabase.from('profiles').select('points')
+      const totalPoints = pointsData?.reduce((sum, p) => sum + (p.points || 0), 0) || 0
+      setLiveUsers(userCount || 0)
+      setLiveLessons(lessonCount || 0)
+      setLivePoints(totalPoints)
+    }
+    fetchStats()
+  }, [checking])
 
   // Matrix rain
   useEffect(() => {
@@ -72,24 +90,16 @@ export default function LandingPage() {
         p.x += p.dx; p.y += p.dy
         if (p.x < 0 || p.x > canvas.width) p.dx *= -1
         if (p.y < 0 || p.y > canvas.height) p.dy *= -1
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
-        ctx.fillStyle = p.color
-        ctx.shadowBlur = 8
-        ctx.shadowColor = p.color
-        ctx.fill()
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+        ctx.fillStyle = p.color; ctx.shadowBlur = 8; ctx.shadowColor = p.color; ctx.fill()
       })
-      // Draw connections
       particles.forEach((p, i) => {
         particles.slice(i + 1).forEach(q => {
           const dist = Math.hypot(p.x - q.x, p.y - q.y)
           if (dist < 120) {
-            ctx.beginPath()
-            ctx.moveTo(p.x, p.y)
-            ctx.lineTo(q.x, q.y)
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y)
             ctx.strokeStyle = `rgba(0,255,136,${0.15 * (1 - dist / 120)})`
-            ctx.lineWidth = 0.5
-            ctx.stroke()
+            ctx.lineWidth = 0.5; ctx.stroke()
           }
         })
       })
@@ -117,7 +127,6 @@ export default function LandingPage() {
     setTimeout(type, 600)
   }, [checking])
 
-  // Scroll
   useEffect(() => {
     const onScroll = () => setScrollY(window.scrollY)
     window.addEventListener('scroll', onScroll)
@@ -130,6 +139,13 @@ export default function LandingPage() {
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
+
+  const testimonials = [
+    { name: 'أحمد خالد', level: 'خبير', avatar: '👨‍💻', text: 'أفضل منصة عربية للأمن السيبراني! تعلمت في أسبوع ما كنت أبحث عنه لأشهر.', stars: 5, badge: '🏆' },
+    { name: 'سارة محمد', level: 'متقدم', avatar: '👩‍💻', text: 'تحديات CTF رائعة ومحتوى عربي أصيل. النظام التنافسي يجعلك تتعلم أسرع!', stars: 5, badge: '🎯' },
+    { name: 'محمد العلي', level: 'متوسط', avatar: '🧑‍💻', text: 'شرح واضح ومبسط للمفاهيم المعقدة. الشهادات احترافية جداً!', stars: 5, badge: '⭐' },
+    { name: 'ليلى أحمد', level: 'خبير', avatar: '👩‍🎓', text: 'من مبتدئة لخبيرة في 3 أشهر. المنصة غيرت مساري المهني!', stars: 5, badge: '🔐' },
+  ]
 
   return (
     <>
@@ -145,8 +161,10 @@ export default function LandingPage() {
         @keyframes float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-16px) rotate(1deg)}}
         @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
         @keyframes borderPulse{0%,100%{border-color:#00ff8822;box-shadow:0 0 0 rgba(0,255,136,0)}50%{border-color:#00ff8866;box-shadow:0 0 30px rgba(0,255,136,0.1)}}
-        @keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
         @keyframes countUp{from{opacity:0;transform:scale(0.5)}to{opacity:1;transform:scale(1)}}
+        @keyframes livePulse{0%,100%{opacity:1}50%{opacity:0.4}}
+        @keyframes slideInRight{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes starTwinkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.7;transform:scale(0.9)}}
         .fade-up{animation:fadeUp 0.8s cubic-bezier(0.4,0,0.2,1) both;}
         .glow-text{animation:glow 3s ease-in-out infinite;}
         .float-card{animation:float 5s ease-in-out infinite;}
@@ -161,7 +179,9 @@ export default function LandingPage() {
         .nav-cta{background:#00ff88;color:#050a0f;border:none;padding:8px 20px;border-radius:100px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:900;cursor:pointer;transition:all 0.25s;}
         .nav-cta:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,255,136,0.3);}
         .badge{display:inline-flex;align-items:center;gap:6px;background:#0a1520;border:1px solid #00ff8822;border-radius:100px;padding:5px 14px;}
-
+        .testimonial-card{background:#0a1520;border:1px solid #1a3a50;border-radius:16px;padding:24px;transition:all 0.35s;}
+        .testimonial-card:hover{transform:translateY(-6px);border-color:#00ff8844;box-shadow:0 20px 50px rgba(0,255,136,0.08);}
+        .live-stat{background:#0a1520;border:1px solid #00ff8822;border-radius:12px;padding:20px 24px;text-align:center;}
         @media(max-width:768px){
           .hero-grid{flex-direction:column!important;}
           .mock-card{display:none!important;}
@@ -177,25 +197,25 @@ export default function LandingPage() {
           .nav-links{display:none!important;}
           .cta-banner{padding:40px 20px!important;}
           .screens-grid{grid-template-columns:1fr!important;}
+          .testimonials-grid{grid-template-columns:1fr!important;}
+          .live-stats-grid{grid-template-columns:repeat(2,1fr)!important;}
         }
         @media(min-width:769px) and (max-width:1100px){
           .features-grid{grid-template-columns:repeat(2,1fr)!important;}
           .hero-title{font-size:44px!important;}
+          .testimonials-grid{grid-template-columns:repeat(2,1fr)!important;}
         }
       `}</style>
 
-      {/* BG Layers */}
       <canvas ref={canvasRef} style={{ position:'fixed', inset:0, zIndex:0, opacity:0.35, pointerEvents:'none' }} />
       <canvas ref={particlesRef} style={{ position:'fixed', inset:0, zIndex:1, opacity:0.6, pointerEvents:'none' }} />
       <div style={{ position:'fixed', inset:0, zIndex:0, background:'radial-gradient(ellipse 80% 60% at 50% -10%,rgba(0,255,136,0.07),transparent)', pointerEvents:'none' }} />
 
       <div style={{ position:'relative', zIndex:2, opacity: visible ? 1 : 0, transition:'opacity 0.6s' }} dir="rtl">
 
-        {/* ===== NAVBAR ===== */}
+        {/* NAVBAR */}
         <nav className="nav-pad" style={{ position:'fixed', top:0, left:0, right:0, zIndex:100, background:`rgba(5,10,15,${Math.min(0.97, 0.7 + scrollY / 400)})`, borderBottom:'1px solid #1a3a50', backdropFilter:'blur(24px)', height:'64px', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 48px', transition:'background 0.3s' }}>
-          <span style={{ fontFamily:'monospace', fontSize:'20px', fontWeight:'700', color:'#00ff88', letterSpacing:'2px' }}>
-            🔐 CYBER<span style={{ color:'#7090a8' }}>عربي</span>
-          </span>
+          <span style={{ fontFamily:'monospace', fontSize:'20px', fontWeight:'700', color:'#00ff88', letterSpacing:'2px' }}>🔐 CYBER<span style={{ color:'#7090a8' }}>عربي</span></span>
           <div className="nav-links" style={{ display:'flex', gap:'28px' }}>
             {['المميزات','كيف تبدأ','التحديات'].map(l => (
               <button key={l} style={{ background:'none', border:'none', color:'#7090a8', fontSize:'14px', cursor:'pointer', fontFamily:'Cairo,sans-serif', transition:'color 0.2s' }}
@@ -213,38 +233,29 @@ export default function LandingPage() {
           </div>
         </nav>
 
-        {/* ===== HERO ===== */}
+        {/* HERO */}
         <section className="hero-pad" style={{ minHeight:'100vh', display:'flex', alignItems:'center', padding:'110px 48px 80px', maxWidth:'1280px', margin:'0 auto' }}>
           <div className="hero-grid" style={{ display:'flex', alignItems:'center', gap:'60px', width:'100%' }}>
-            {/* Left */}
             <div style={{ flex:1 }}>
               <div className="fade-up badge" style={{ marginBottom:'24px', animationDelay:'0s' }}>
                 <span style={{ animation:'pulse 2s infinite', color:'#00ff88', fontSize:'9px' }}>●</span>
                 <span style={{ color:'#7090a8', fontSize:'12px', fontFamily:'monospace' }}>منصة الأمن السيبراني العربية #1</span>
               </div>
-
               <h1 className="fade-up glow-text hero-title" style={{ animationDelay:'0.1s', fontSize:'54px', fontWeight:'900', lineHeight:'1.2', marginBottom:'18px', color:'white' }}>
-                تعلّم<br />
-                <span style={{ color:'#00ff88' }}>الأمن السيبراني</span><br />
-                بالعربي
+                تعلّم<br /><span style={{ color:'#00ff88' }}>الأمن السيبراني</span><br />بالعربي
               </h1>
-
               <div className="fade-up" style={{ animationDelay:'0.2s', fontSize:'17px', color:'#5a7a90', marginBottom:'10px', fontFamily:'monospace', minHeight:'26px' }}>
                 <span style={{ color:'#00d4ff' }}>&gt; </span>
                 <span style={{ color:'#a0c0d8' }}>{matrixText}</span>
                 <span style={{ animation:'pulse 1s infinite', color:'#00ff88' }}>█</span>
               </div>
-
               <p className="fade-up" style={{ animationDelay:'0.25s', fontSize:'16px', color:'#5a7a90', marginBottom:'36px', maxWidth:'480px', lineHeight:'1.85' }}>
                 منصة تعليمية متكاملة — من المبتدئ للخبير، مع تحديات CTF يومية ونظام نقاط تنافسي. كل المحتوى بالعربي ومجاني 100%.
               </p>
-
               <div className="fade-up hero-btns" style={{ animationDelay:'0.3s', display:'flex', gap:'14px', flexWrap:'wrap', marginBottom:'48px' }}>
                 <button className="cta-primary" onClick={() => router.push('/login')}>🚀 ابدأ مجاناً الآن</button>
                 <button className="cta-secondary" onClick={() => router.push('/login')}>👀 استعرض المنصة</button>
               </div>
-
-              {/* Stats */}
               <div className="fade-up stats-grid" style={{ animationDelay:'0.4s', display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'20px', maxWidth:'460px' }}>
                 {[
                   { n:'6', label:'مسارات تعليمية', color:'#00ff88' },
@@ -260,21 +271,16 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right — Platform Screenshots mockup */}
-            <div className="mock-card float-card" style={{ width:'500px', flexShrink:0 }}>
+            {/* Mock screen */}
+            <div className="mock-card float-card" style={{ width:'500px', flexShrink:0, position:'relative' }}>
               <div className="mock-screen" style={{ boxShadow:'0 40px 100px rgba(0,0,0,0.7), 0 0 60px rgba(0,255,136,0.05)' }}>
-                {/* Browser bar */}
                 <div style={{ background:'#080f18', padding:'10px 16px', display:'flex', alignItems:'center', gap:'8px', borderBottom:'1px solid #1a3a50' }}>
-                  <span style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#ff5f57' }}></span>
-                  <span style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#febc2e' }}></span>
-                  <span style={{ width:'10px', height:'10px', borderRadius:'50%', background:'#28c840' }}></span>
+                  {['#ff5f57','#febc2e','#28c840'].map(c => <span key={c} style={{ width:'10px', height:'10px', borderRadius:'50%', background:c }}></span>)}
                   <div style={{ flex:1, background:'#0f1f30', borderRadius:'4px', padding:'4px 12px', marginRight:'8px' }}>
                     <span style={{ color:'#3a5a70', fontFamily:'monospace', fontSize:'11px' }}>cybersec-platform.vercel.app/dashboard</span>
                   </div>
                 </div>
-                {/* Dashboard preview */}
                 <div style={{ padding:'16px', background:'#050a0f' }}>
-                  {/* Navbar */}
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'14px', padding:'8px 12px', background:'#080f18', borderRadius:'8px', border:'1px solid #1a3a5066' }}>
                     <span style={{ color:'#00ff88', fontFamily:'monospace', fontSize:'11px', fontWeight:'700' }}>🔐 CYBERعربي</span>
                     <div style={{ display:'flex', gap:'6px' }}>
@@ -282,7 +288,6 @@ export default function LandingPage() {
                       <span style={{ background:'#0a1520', border:'1px solid #1a3a50', color:'#7090a8', padding:'2px 8px', borderRadius:'100px', fontSize:'9px' }}>⭐ 150</span>
                     </div>
                   </div>
-                  {/* Hero section */}
                   <div style={{ background:'linear-gradient(135deg,#0a1520,#080f18)', border:'1px solid #1a3a50', borderRadius:'8px', padding:'12px', marginBottom:'10px' }}>
                     <p style={{ color:'white', fontWeight:'900', fontSize:'13px', marginBottom:'4px' }}>أهلاً، <span style={{ color:'#00ff88' }}>hacker</span> 👋</p>
                     <p style={{ color:'#5a7a90', fontSize:'10px', marginBottom:'10px' }}>أنت في المستوى 🔥 متوسط</p>
@@ -295,7 +300,6 @@ export default function LandingPage() {
                       ))}
                     </div>
                   </div>
-                  {/* Course cards */}
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'6px' }}>
                     {[
                       { title:'أساسيات الأمن', icon:'🛡️', color:'#00ff88', p:100 },
@@ -317,14 +321,10 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
-
-              {/* Floating CTF badge */}
               <div style={{ position:'absolute', top:'-20px', left:'-20px', background:'linear-gradient(135deg,#ff6b35,#ff3366)', borderRadius:'12px', padding:'10px 16px', boxShadow:'0 10px 30px rgba(255,107,53,0.4)', animation:'float 4s ease-in-out infinite', animationDelay:'1s' }}>
                 <p style={{ color:'white', fontFamily:'monospace', fontSize:'11px', fontWeight:'700' }}>🎯 تحدي اليوم</p>
                 <p style={{ color:'rgba(255,255,255,0.7)', fontSize:'10px' }}>+50 نقطة</p>
               </div>
-
-              {/* Floating points badge */}
               <div style={{ position:'absolute', bottom:'-15px', right:'-15px', background:'linear-gradient(135deg,#0f2a1a,#0a1520)', border:'1px solid #00ff8844', borderRadius:'12px', padding:'10px 16px', boxShadow:'0 10px 30px rgba(0,255,136,0.2)', animation:'float 4s ease-in-out infinite', animationDelay:'2s' }}>
                 <p style={{ color:'#00ff88', fontFamily:'monospace', fontSize:'12px', fontWeight:'900' }}>🎉 +25 نقطة</p>
                 <p style={{ color:'#5a7a90', fontSize:'10px' }}>اختبار مكتمل!</p>
@@ -333,7 +333,32 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ===== SCREENS SECTION ===== */}
+        {/* ===== LIVE STATS ===== */}
+        <section style={{ padding:'0 48px 80px', maxWidth:'1200px', margin:'0 auto' }}>
+          <div className="fade-up" style={{ textAlign:'center', marginBottom:'32px' }}>
+            <div style={{ display:'inline-flex', alignItems:'center', gap:'8px', background:'rgba(0,255,136,0.08)', border:'1px solid rgba(0,255,136,0.2)', borderRadius:'100px', padding:'6px 16px', marginBottom:'16px' }}>
+              <span style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#00ff88', animation:'livePulse 1.5s infinite', display:'inline-block' }}></span>
+              <span style={{ color:'#00ff88', fontSize:'12px', fontFamily:'monospace' }}>إحصائيات مباشرة</span>
+            </div>
+          </div>
+          <div className="live-stats-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}>
+            {[
+              { value: liveUsers || '∞', label: 'مستخدم مسجّل', icon: '👥', color: '#00ff88', suffix: '+' },
+              { value: liveLessons || '∞', label: 'درس مكتمل', icon: '✅', color: '#00d4ff', suffix: '+' },
+              { value: livePoints > 1000 ? `${Math.floor(livePoints/1000)}k` : livePoints || '∞', label: 'نقطة مكتسبة', icon: '⭐', color: '#ffd700', suffix: '+' },
+            ].map((stat, i) => (
+              <div key={i} className="live-stat fade-up" style={{ animationDelay:`${i*0.1}s` }}>
+                <div style={{ fontSize:'32px', marginBottom:'8px' }}>{stat.icon}</div>
+                <p style={{ fontFamily:'monospace', fontSize:'36px', fontWeight:'900', color:stat.color, lineHeight:1, marginBottom:'6px' }}>
+                  {stat.value}{stat.value !== '∞' ? stat.suffix : ''}
+                </p>
+                <p style={{ color:'#5a7a90', fontSize:'13px' }}>{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* SCREENS SECTION */}
         <section className="section-pad" style={{ padding:'80px 48px', background:'linear-gradient(180deg,transparent,#08111888,transparent)' }}>
           <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
             <div className="fade-up" style={{ textAlign:'center', marginBottom:'48px' }}>
@@ -358,7 +383,7 @@ export default function LandingPage() {
                     <div style={{ background:'#050a0f', padding:'12px', borderRadius:'8px' }}>
                       <div style={{ color:'#00ff88', fontFamily:'monospace', fontSize:'11px', marginBottom:'8px' }}>01 / 03 &nbsp;✓ مكتمل</div>
                       <div style={{ color:'white', fontSize:'12px', fontWeight:'700', marginBottom:'6px' }}>أساسيات الأمن السيبراني</div>
-                      <div style={{ color:'#5a7a90', fontSize:'10px', lineHeight:'1.6', marginBottom:'10px' }}>الأمن السيبراني هو مجموعة من التقنيات والعمليات والممارسات...</div>
+                      <div style={{ color:'#5a7a90', fontSize:'10px', lineHeight:'1.6', marginBottom:'10px' }}>الأمن السيبراني هو مجموعة من التقنيات...</div>
                       <div style={{ background:'#00ff88', color:'#050a0f', borderRadius:'6px', padding:'6px', textAlign:'center', fontSize:'10px', fontWeight:'900' }}>⚡ ابدأ الاختبار (+15 نقطة)</div>
                     </div>
                   )
@@ -368,10 +393,7 @@ export default function LandingPage() {
                     <div style={{ background:'#0a1520', padding:'12px', borderRadius:'8px' }}>
                       <div style={{ display:'flex', gap:'10px', alignItems:'center', marginBottom:'10px' }}>
                         <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:'#0f2a1a', border:'2px solid #a855f7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>🧑‍💻</div>
-                        <div>
-                          <p style={{ color:'white', fontSize:'11px', fontWeight:'700' }}>hacker</p>
-                          <p style={{ color:'#a855f7', fontSize:'10px', fontFamily:'monospace' }}>⚡ متقدم</p>
-                        </div>
+                        <div><p style={{ color:'white', fontSize:'11px', fontWeight:'700' }}>hacker</p><p style={{ color:'#a855f7', fontSize:'10px', fontFamily:'monospace' }}>⚡ متقدم</p></div>
                         <div style={{ marginRight:'auto', textAlign:'center' }}>
                           <p style={{ color:'#ffd700', fontFamily:'monospace', fontSize:'16px', fontWeight:'900' }}>150</p>
                           <p style={{ color:'#5a7a90', fontSize:'9px' }}>نقطة</p>
@@ -387,7 +409,7 @@ export default function LandingPage() {
                 },
               ].map((screen, i) => (
                 <div key={i} className="fade-up" style={{ animationDelay:`${i*0.15}s` }}>
-                  <div className="mock-screen" style={{ marginBottom:'12px', position:'relative' }}>
+                  <div className="mock-screen" style={{ marginBottom:'12px' }}>
                     <div style={{ background:'#080f18', padding:'8px 12px', display:'flex', gap:'6px', alignItems:'center', borderBottom:'1px solid #1a3a50' }}>
                       {['#ff5f57','#febc2e','#28c840'].map(c => <span key={c} style={{ width:'8px', height:'8px', borderRadius:'50%', background:c }}></span>)}
                     </div>
@@ -403,7 +425,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ===== FEATURES ===== */}
+        {/* FEATURES */}
         <section className="section-pad" style={{ padding:'80px 48px' }}>
           <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
             <div className="fade-up" style={{ textAlign:'center', marginBottom:'48px' }}>
@@ -419,10 +441,8 @@ export default function LandingPage() {
                 { icon:'🔐', color:'#a855f7', title:'محتوى عربي 100%', desc:'كل الشروحات والدروس بالعربي — لا حاجة لترجمة تقنية.' },
                 { icon:'🆓', color:'#00ff88', title:'مجاني بالكامل', desc:'لا اشتراكات ولا رسوم — كل المحتوى مفتوح للجميع.' },
               ].map((f,i) => (
-                <div key={i} className={`feature-card fade-up`} style={{ animationDelay:`${i*0.1}s` }}>
-                  <div style={{ width:'50px', height:'50px', borderRadius:'12px', background:f.color+'15', border:`1px solid ${f.color}33`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px', marginBottom:'16px' }}>
-                    {f.icon}
-                  </div>
+                <div key={i} className="feature-card fade-up" style={{ animationDelay:`${i*0.1}s` }}>
+                  <div style={{ width:'50px', height:'50px', borderRadius:'12px', background:f.color+'15', border:`1px solid ${f.color}33`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px', marginBottom:'16px' }}>{f.icon}</div>
                   <h3 style={{ color:'white', fontWeight:'700', fontSize:'15px', marginBottom:'10px' }}>{f.title}</h3>
                   <p style={{ color:'#5a7a90', fontSize:'13px', lineHeight:'1.7' }}>{f.desc}</p>
                 </div>
@@ -431,8 +451,41 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ===== HOW IT WORKS ===== */}
+        {/* ===== TESTIMONIALS ===== */}
         <section className="section-pad" style={{ padding:'80px 48px', background:'linear-gradient(180deg,transparent,#08111888,transparent)' }}>
+          <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
+            <div className="fade-up" style={{ textAlign:'center', marginBottom:'48px' }}>
+              <span style={{ color:'#00ff88', fontFamily:'monospace', fontSize:'13px' }}>// آراء المتعلمين</span>
+              <h2 style={{ fontSize:'34px', fontWeight:'900', color:'white', marginTop:'8px' }}>ماذا يقول مجتمعنا</h2>
+              <p style={{ color:'#5a7a90', fontSize:'15px', marginTop:'12px' }}>انضم لآلاف المتعلمين الذين غيّروا مساراتهم المهنية</p>
+            </div>
+            <div className="testimonials-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'20px' }}>
+              {testimonials.map((t, i) => (
+                <div key={i} className="testimonial-card fade-up" style={{ animationDelay:`${i*0.1}s` }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'16px' }}>
+                    <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'#0f1f30', border:'2px solid #00ff8844', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px' }}>{t.avatar}</div>
+                    <div>
+                      <p style={{ color:'white', fontWeight:'700', fontSize:'14px' }}>{t.name}</p>
+                      <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                        <span style={{ background:'rgba(0,255,136,0.1)', border:'1px solid rgba(0,255,136,0.2)', color:'#00ff88', padding:'1px 8px', borderRadius:'100px', fontSize:'10px', fontFamily:'monospace' }}>{t.level}</span>
+                        <span style={{ fontSize:'12px' }}>{t.badge}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display:'flex', gap:'2px', marginBottom:'12px' }}>
+                    {Array(t.stars).fill(0).map((_, si) => (
+                      <span key={si} style={{ color:'#ffd700', fontSize:'14px', animation:`starTwinkle ${1+si*0.2}s ease-in-out infinite` }}>★</span>
+                    ))}
+                  </div>
+                  <p style={{ color:'#7090a8', fontSize:'13px', lineHeight:'1.7', fontStyle:'italic' }}>"{t.text}"</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* HOW IT WORKS */}
+        <section className="section-pad" style={{ padding:'80px 48px' }}>
           <div style={{ maxWidth:'1000px', margin:'0 auto' }}>
             <div className="fade-up" style={{ textAlign:'center', marginBottom:'48px' }}>
               <span style={{ color:'#00ff88', fontFamily:'monospace', fontSize:'13px' }}>// كيف تبدأ</span>
@@ -454,27 +507,20 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ===== CTA BANNER ===== */}
+        {/* CTA BANNER */}
         <section className="section-pad" style={{ padding:'80px 48px' }}>
           <div style={{ maxWidth:'800px', margin:'0 auto' }}>
             <div className="fade-up cta-banner" style={{ background:'linear-gradient(135deg,#0f2a1a,#0a1a2e,#150a20)', border:'1px solid #00ff8822', borderRadius:'24px', padding:'64px 48px', textAlign:'center', position:'relative', overflow:'hidden' }}>
               <div style={{ position:'absolute', top:'-80px', left:'50%', transform:'translateX(-50%)', width:'400px', height:'400px', background:'#00ff8806', borderRadius:'50%', filter:'blur(80px)', pointerEvents:'none' }}></div>
-              <div style={{ position:'absolute', top:'-40px', right:'-40px', width:'200px', height:'200px', background:'#a855f706', borderRadius:'50%', filter:'blur(60px)', pointerEvents:'none' }}></div>
               <p style={{ color:'#00ff88', fontFamily:'monospace', fontSize:'13px', marginBottom:'16px', position:'relative' }}>// ابدأ رحلتك</p>
-              <h2 style={{ fontSize:'38px', fontWeight:'900', color:'white', marginBottom:'16px', position:'relative' }}>
-                جاهز تصبح خبيراً؟ 🚀
-              </h2>
-              <p style={{ color:'#7090a8', fontSize:'16px', marginBottom:'36px', position:'relative' }}>
-                انضم الآن وابدأ تعلّم الأمن السيبراني مجاناً
-              </p>
-              <button className="cta-primary" onClick={() => router.push('/login')} style={{ fontSize:'18px', padding:'16px 48px', position:'relative' }}>
-                🔐 ابدأ التعلّم مجاناً
-              </button>
+              <h2 style={{ fontSize:'38px', fontWeight:'900', color:'white', marginBottom:'16px', position:'relative' }}>جاهز تصبح خبيراً؟ 🚀</h2>
+              <p style={{ color:'#7090a8', fontSize:'16px', marginBottom:'36px', position:'relative' }}>انضم الآن وابدأ تعلّم الأمن السيبراني مجاناً</p>
+              <button className="cta-primary" onClick={() => router.push('/login')} style={{ fontSize:'18px', padding:'16px 48px', position:'relative' }}>🔐 ابدأ التعلّم مجاناً</button>
             </div>
           </div>
         </section>
 
-        {/* ===== FOOTER ===== */}
+        {/* FOOTER */}
         <footer style={{ borderTop:'1px solid #1a3a50', padding:'32px 48px', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'16px' }}>
           <span style={{ fontFamily:'monospace', fontSize:'18px', fontWeight:'700', color:'#00ff88', letterSpacing:'2px' }}>🔐 CYBERعربي</span>
           <p style={{ color:'#3a5a70', fontSize:'13px' }}>منصة الأمن السيبراني العربية — تعلّم، تحدّ، تقدّم</p>
@@ -486,7 +532,6 @@ export default function LandingPage() {
             ))}
           </div>
         </footer>
-
       </div>
     </>
   )
