@@ -401,7 +401,7 @@ const finishQuizNoQuestions = async () => {
                 <div>
                   {['A', 'B', 'C', 'D'].map(opt => {
                     const text = questions[currentQ][`option_${opt.toLowerCase()}`]
-                    const isCorrect = opt === questions[currentQ].correct_answer
+                    const isCorrect = opt.toUpperCase() === questions[currentQ].correct_answer?.toUpperCase()
                     const isSelected = opt === selected
                     let cls = 'opt-btn'
                     if (answered) {
