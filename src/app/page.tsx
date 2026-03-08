@@ -67,7 +67,7 @@ function Reveal({
 // Stagger wrapper — each child appears with increasing delay
 function Stagger({
   children, animation = 'up', stagger = 90, delay = 0, duration = 550,
-  style = {}, itemStyle = {}
+  style = {}, itemStyle = {}, className = ''
 }: {
   children: React.ReactNode[]
   animation?: AnimType
@@ -76,6 +76,7 @@ function Stagger({
   duration?: number
   style?: React.CSSProperties
   itemStyle?: React.CSSProperties
+  className?: string
 }) {
   const { ref, visible } = useReveal()
   const hidden: Record<AnimType, React.CSSProperties> = {
@@ -99,7 +100,7 @@ function Stagger({
   // ✅ الـ grid style يُطبَّق على الـ wrapper مباشرة
   // كل child يأخذ animation بدون div وسيط يكسر الـ grid
   return (
-    <div ref={ref} style={style}>
+    <div ref={ref} style={style} className={className}>
       {children.map((child, i) => (
         <div key={i} style={{
           ...(visible ? shown[animation] : hidden[animation]),
@@ -336,7 +337,7 @@ export default function LandingPage() {
         </nav>
 
         {/* ═══ HERO — يظهر مباشرة بـ CSS animation (فوق الـ fold) ═══ */}
-        <section className="hero-pad" style={{ minHeight:'100vh', display:'flex', alignItems:'center', padding:'110px 48px 80px', maxWidth:'1280px', margin:'0 auto' }}>
+        <section className="hero-pad" style={{ display:'flex', alignItems:'center', padding:'110px 48px 80px', maxWidth:'1280px', margin:'0 auto' }}>
           <div className="hero-grid" style={{ display:'flex', alignItems:'center', gap:'60px', width:'100%' }}>
             <div style={{ flex:1 }}>
               <div className="fade-up badge-pill" style={{ marginBottom:'24px', animationDelay:'0s' }}>
@@ -436,14 +437,14 @@ export default function LandingPage() {
         </section>
 
         {/* ═══ LIVE STATS — scroll reveal ═══ */}
-        <section style={{ padding:'0 48px 80px', maxWidth:'1200px', margin:'0 auto' }}>
+        <section style={{ padding:'0 48px 60px', maxWidth:'1200px', margin:'0 auto' }}>
           <Reveal animation="fade" style={{ textAlign:'center', marginBottom:'32px' }}>
             <div style={{ display:'inline-flex', alignItems:'center', gap:'8px', background:'rgba(0,255,136,0.08)', border:'1px solid rgba(0,255,136,0.2)', borderRadius:'100px', padding:'6px 16px', marginBottom:'16px' }}>
               <span style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#00ff88', animation:'livePulse 1.5s infinite', display:'inline-block' }}></span>
               <span style={{ color:'#00ff88', fontSize:'12px', fontFamily:'monospace' }}>إحصائيات مباشرة</span>
             </div>
           </Reveal>
-          <Stagger animation="scale" stagger={120} style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))', gap:'20px' }} itemStyle={{}}>
+          <Stagger animation="scale" stagger={120} style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }} className="stagger-grid" itemStyle={{}}>
             {[
               { value: liveUsers || '∞', label: 'مستخدم مسجّل', icon: '👥', color: '#00ff88', suffix: '+' },
               { value: liveLessons || '∞', label: 'درس مكتمل', icon: '✅', color: '#00d4ff', suffix: '+' },
@@ -470,7 +471,8 @@ export default function LandingPage() {
             <Stagger
               animation="flip"
               stagger={150}
-              style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:'20px' }}
+              style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}
+              className="stagger-grid"
             >
               {[
                 { title:'تحديات CTF', desc:'8 تحديات يومية مع عداد تنازلي', icon:'🎯', color:'#ff6b35',
@@ -541,7 +543,8 @@ export default function LandingPage() {
             <Stagger
               animation="up"
               stagger={80}
-              style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:'20px' }}
+              style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}
+              className="stagger-grid"
             >
               {[
                 { icon:'🛡️', color:'#00ff88', title:'6 مسارات تعليمية', desc:'من أساسيات الأمن لاختبار الاختراق والتشفير والهندسة الاجتماعية.' },
@@ -572,7 +575,8 @@ export default function LandingPage() {
             <Stagger
               animation="left"
               stagger={100}
-              style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:'20px' }}
+              style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'20px' }}
+              className="stagger-grid"
             >
               {testimonials.map((t, i) => (
                 <div key={i} className="testimonial-card">
@@ -608,7 +612,8 @@ export default function LandingPage() {
             <Stagger
               animation="scale"
               stagger={160}
-              style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:'24px', direction:'ltr' }}
+              style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'24px', direction:'ltr' }}
+              className="stagger-grid"
             >
               {[
                 { n:'01', color:'#00ff88', title:'سجّل مجاناً', desc:'أنشئ حسابك في ثوانٍ بإيميلك — لا بطاقة بنكية.' },
