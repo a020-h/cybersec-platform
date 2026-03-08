@@ -179,33 +179,22 @@ export default function CoursePage({ params }: { params: Promise<{ id: string }>
 
   const startQuiz = async () => {
   if (!currentLesson || currentLesson.id === 'demo') return
-  
-  // تحقق من sessionToken
-  const { data: { session } } = await supabase.auth.getSession()
-  const token = session?.access_token || sessionToken
-  
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/questions?lesson_id=eq.${currentLesson.id}`,
     { headers: { 
         'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, 
-        'Authorization': `Bearer ${token}` 
+        'Authorization': `Bearer ${sessionToken}` 
     }}
   )
   const data = await res.json()
-  
-  console.log('Questions found:', data) // للتشخيص
-  
+  console.log('Questions found:', data)
   if (data?.length > 0) {
     setQuestions(data); setCurrentQ(0); setSelected(null)
     setAnswered(false); setQuizScore(0); setQuizDone(false); setShowQuiz(true)
   } else {
-    // لا يوجد أسئلة — أكمل الدرس مباشرة
-    if (!completed.has(currentLesson.id)) {
-      await finishQuizNoQuestions()
-    }
+    alert('لا توجد أسئلة لهذا الدرس')
   }
 }
-
 const finishQuizNoQuestions = async () => {
   if (!user || completed.has(currentLesson.id)) return
   
