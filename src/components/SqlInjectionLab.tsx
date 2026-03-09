@@ -567,6 +567,17 @@ export default function SqlInjectionLab({ onComplete }: { onComplete?: (score: n
               <span style={{ color: '#00ff88', fontFamily: 'monospace' }}>+{ch.points}</span>
             </div>
           ))}
+<button onClick={() => window.location.href = '/dashboard'}
+  style={{
+    marginTop: 24, width: '100%', padding: '14px',
+    background: 'linear-gradient(135deg, #ff3366, #cc1144)',
+    color: 'white', border: 'none', borderRadius: 10,
+    fontFamily: "'Cairo', sans-serif", fontSize: 16,
+    fontWeight: 900, cursor: 'pointer',
+    boxShadow: '0 0 20px #ff336644'
+  }}>
+  ← العودة للداشبورد
+</button>
           <style>{`@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }`}</style>
         </div>
       </div>

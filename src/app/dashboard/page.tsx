@@ -245,6 +245,10 @@ export default function Dashboard() {
                 🛡️ Admin
               </button>
             )}
+<button className="nav-btn" onClick={() => router.push('/dashboard/labs')}
+  style={{ background: 'rgba(255,51,153,0.08)', borderColor: 'rgba(255,51,153,0.3)', color: '#ff33aa' }}>
+  🧪 Labs
+</button>
             <button className="nav-btn" onClick={() => router.push('/dashboard/ctf')}
               style={{ background: 'rgba(255,107,53,0.08)', borderColor: 'rgba(255,107,53,0.3)', color: '#ff6b35' }}>
               🎯 CTF
@@ -275,6 +279,7 @@ export default function Dashboard() {
             <div className="mobile-menu-dropdown">
               {[
                 { label: '🏆 المتصدرون', path: '/dashboard/leaderboard', color: '#ffd700', bg: 'rgba(255,215,0,0.1)' },
+{ label: '🧪 Labs التفاعلية', path: '/dashboard/labs', color: '#ff33aa', bg: 'rgba(255,51,153,0.1)' },
                 { label: '🎯 تحديات CTF', path: '/dashboard/ctf', color: '#ff6b35', bg: 'rgba(255,107,53,0.1)' },
                 { label: '👤 الملف الشخصي', path: '/dashboard/profile', color: '#a0c0d8', bg: '#0d1b2e' },
               ].map(item => (
@@ -438,6 +443,30 @@ export default function Dashboard() {
                   </div>
                 )
               })}
+
+              {/* Labs Card */}
+              <div className="course-card fade-up"
+                style={{ border: '1px solid #ff33aa44', animationDelay: '0.85s' }}
+                onClick={() => router.push('/dashboard/labs')}>
+                <div style={{ background: 'linear-gradient(135deg,#200a15,#150510)', padding: '24px 20px', position: 'relative', overflow: 'hidden', minHeight: '130px' }}>
+                  <div style={{ position: 'absolute', top: '-30px', left: '-30px', width: '120px', height: '120px', background: 'radial-gradient(circle, #ff33aa18 0%, transparent 70%)', borderRadius: '50%' }}></div>
+                  <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+                    <span style={{ fontSize: '42px', lineHeight: '1' }}>🧪</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'flex-end' }}>
+                      <span style={{ background: '#ff33aa18', border: '1px solid #ff33aa35', color: '#ff33aa', padding: '3px 10px', borderRadius: '100px', fontSize: '10px', fontFamily: 'Space Mono,monospace', fontWeight: '700' }}>جديد 🔥</span>
+                      <span style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.25)', color: '#ffd700', padding: '3px 10px', borderRadius: '100px', fontSize: '10px', fontFamily: 'Space Mono,monospace' }}>350 نقطة</span>
+                    </div>
+                  </div>
+                  <h3 style={{ position: 'relative', color: 'white', fontWeight: '900', fontSize: '15px', lineHeight: '1.45' }}>Labs التفاعلية</h3>
+                </div>
+                <div style={{ padding: '16px 20px', background: 'rgba(5,10,15,0.5)' }}>
+                  <p style={{ color: '#7090a8', fontSize: '12px', marginBottom: '14px' }}>اختبر ثغرات حقيقية في بيئة آمنة — SQL Injection والمزيد</p>
+                  <button style={{ width: '100%', padding: '11px', border: 'none', borderRadius: '10px', background: '#ff33aa22', color: '#ff33aa', fontFamily: 'Cairo,sans-serif', fontSize: '14px', fontWeight: '700', cursor: 'pointer', outline: '1px solid #ff33aa30' }}>
+                    ابدأ Lab الآن ←
+                  </button>
+                </div>
+              </div>
+
             </div>
           )}
 
