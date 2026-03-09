@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 const NAV_ITEMS = [
   { href: '/dashboard',            icon: '🏠', label: 'الرئيسية'  },
   { href: '/dashboard/leaderboard',icon: '🏆', label: 'المتصدرين' },
+  { href: '/dashboard/labs',       icon: '🧪', label: 'Labs'       },
   { href: '/dashboard/ctf',        icon: '🚩', label: 'CTF'        },
   { href: '/dashboard/profile',    icon: '👤', label: 'ملفي'       },
 ]
