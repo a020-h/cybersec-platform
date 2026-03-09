@@ -488,6 +488,10 @@ export default function SqlInjectionLab({ onComplete }: { onComplete?: (score: n
       }}>
         <div style={{ maxWidth: 600, width: '100%' }}>
           {/* Badge */}
+<button onClick={() => window.location.href = '/dashboard'}
+  style={{ background: 'transparent', border: '1px solid #333', color: '#666', padding: '8px 16px', borderRadius: 8, fontFamily: "'Cairo', sans-serif", fontSize: 13, cursor: 'pointer', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 6 }}>
+  ← العودة للداشبورد
+</button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
             <div style={{ background: '#ff336622', border: '1px solid #ff3366', borderRadius: 8, padding: '6px 14px', fontSize: 12, color: '#ff6688' }}>
               🧪 Lab تفاعلي
@@ -511,6 +515,10 @@ export default function SqlInjectionLab({ onComplete }: { onComplete?: (score: n
           </p>
 
           {/* Challenges Preview */}
+<button onClick={() => window.location.href = '/dashboard'}
+  style={{ background: 'transparent', border: '1px solid #1a1a3a', color: '#555', padding: '6px 12px', borderRadius: 6, fontFamily: "'Cairo', sans-serif", fontSize: 12, cursor: 'pointer', marginLeft: 8 }}>
+  ← خروج
+</button>
           <div style={{ marginBottom: 32 }}>
             {CHALLENGES.map((ch, i) => (
               <div key={ch.id} style={{
