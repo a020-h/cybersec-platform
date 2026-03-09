@@ -602,9 +602,31 @@ export default function SqlInjectionLab({ onComplete }: { onComplete?: (score: n
     }}>
       {/* Top Bar */}
       <div style={{
-        background: '#0a0a18', borderBottom: '1px solid #1a1a3a',
-        padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-      }}>
+  background: '#0a0a18', borderBottom: '1px solid #1a1a3a',
+  padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+}}>
+  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <button onClick={() => window.location.href = '/dashboard'}
+      style={{ background: 'transparent', border: '1px solid #1a1a3a', color: '#555', padding: '5px 10px', borderRadius: 6, fontFamily: "'Cairo', sans-serif", fontSize: 11, cursor: 'pointer' }}>
+      ← خروج
+    </button>
+    {CHALLENGES.map(ch => (
+      <button key={ch.id} onClick={() => setCurrentChallenge(ch.id)}
+        style={{
+          width: 32, height: 32, borderRadius: '50%', border: `2px solid ${solved.has(ch.id) ? '#00ff88' : ch.id === currentChallenge ? '#ff3366' : '#1a1a3a'}`,
+          background: solved.has(ch.id) ? '#00ff8822' : ch.id === currentChallenge ? '#ff336622' : 'transparent',
+          color: solved.has(ch.id) ? '#00ff88' : ch.id === currentChallenge ? '#ff3366' : '#444',
+          cursor: 'pointer', fontSize: 12, fontWeight: 700, fontFamily: 'monospace'
+        }}>
+        {solved.has(ch.id) ? '✓' : ch.id}
+      </button>
+    ))}
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+    <span style={{ color: '#ffd700', fontFamily: 'monospace', fontSize: 14 }}>⭐ {totalScore}</span>
+    <span style={{ color: '#555', fontSize: 12 }}>{solved.size}/4 محلول</span>
+  </div>
+</div>
         <div style={{ display: 'flex', gap: 8 }}>
           {CHALLENGES.map(ch => (
             <button key={ch.id} onClick={() => setCurrentChallenge(ch.id)}
