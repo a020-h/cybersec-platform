@@ -1,156 +1,55 @@
-'use client'
-import { useEffect, useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+// SERVER COMPONENT — no 'use client', no JS shipped for static sections
+import dynamic from 'next/dynamic'
+
+const LandingHero = dynamic(() => import('@/components/LandingHero'), { ssr: false })
+
+const features = [
+  { icon: '🛡️', color: '#00ff88', title: '6 مسارات تعليمية', desc: 'من أساسيات الأمن لاختبار الاختراق والتشفير والهندسة الاجتماعية.' },
+  { icon: '🎯', color: '#ff6b35', title: 'تحديات CTF يومية', desc: '8+ تحديات Capture The Flag مع عداد تنازلي ونقاط تنافسية.' },
+  { icon: '⭐', color: '#ffd700', title: 'نظام النقاط والمستويات', desc: '4 مستويات — مبتدئ، متوسط، متقدم، خبير — مع إنجازات وشارات.' },
+  { icon: '📱', color: '#00d4ff', title: 'يعمل على الجوال', desc: 'تعلّم في أي وقت — المنصة متجاوبة بالكامل مع الهواتف.' },
+  { icon: '🔐', color: '#a855f7', title: 'محتوى عربي 100%', desc: 'كل الشروحات والدروس بالعربي — لا حاجة لترجمة تقنية.' },
+  { icon: '🆓', color: '#00ff88', title: 'مجاني بالكامل', desc: 'لا اشتراكات ولا رسوم — كل المحتوى مفتوح للجميع.' },
+]
+
+const testimonials = [
+  { name: 'أحمد خالد', level: 'خبير', avatar: '👨‍💻', text: 'أفضل منصة عربية للأمن السيبراني! تعلمت في أسبوع ما كنت أبحث عنه لأشهر.', badge: '🏆' },
+  { name: 'سارة محمد', level: 'متقدم', avatar: '👩‍💻', text: 'تحديات CTF رائعة ومحتوى عربي أصيل. النظام التنافسي يجعلك تتعلم أسرع!', badge: '🎯' },
+  { name: 'محمد العلي', level: 'متوسط', avatar: '🧑‍💻', text: 'شرح واضح ومبسط للمفاهيم المعقدة. الشهادات احترافية جداً!', badge: '⭐' },
+  { name: 'ليلى أحمد', level: 'خبير', avatar: '👩‍🎓', text: 'من مبتدئة لخبيرة في 3 أشهر. المنصة غيرت مساري المهني!', badge: '🔐' },
+]
 
 export default function LandingPage() {
-  const router = useRouter()
-  const [checking, setChecking] = useState(true)
-  const [visible, setVisible] = useState(false)
-  const [matrixText, setMatrixText] = useState('')
-  const [scrollY, setScrollY] = useState(0)
-  const [liveUsers, setLiveUsers] = useState(0)
-  const [liveLessons, setLiveLessons] = useState(0)
-  const [livePoints, setLivePoints] = useState(0)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.push('/dashboard')
-      else { setChecking(false); setTimeout(() => setVisible(true), 100) }
-    })
-  }, [])
-
-  // Fetch live stats
-  useEffect(() => {
-    if (checking) return
-    const fetchStats = async () => {
-      const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
-      const { count: lessonCount } = await supabase.from('lesson_completions').select('*', { count: 'exact', head: true })
-      const { data: pointsData } = await supabase.from('profiles').select('points')
-      const totalPoints = pointsData?.reduce((sum, p) => sum + (p.points || 0), 0) || 0
-      setLiveUsers(userCount || 0)
-      setLiveLessons(lessonCount || 0)
-      setLivePoints(totalPoints)
-    }
-    fetchStats()
-  }, [checking])
-
-  // Matrix rain — throttled, low opacity, single canvas
-  useEffect(() => {
-    if (checking) return
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    let raf: number
-    const resize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-    }
-    resize()
-    window.addEventListener('resize', resize, { passive: true })
-
-    const cols = Math.floor(canvas.width / 28)
-    const drops: number[] = Array(cols).fill(1)
-    const chars = '01アイウABCDEF'
-    let frame = 0
-
-    const draw = () => {
-      frame++
-      // Only draw every 3 frames → ~20fps instead of 60fps
-      if (frame % 3 === 0) {
-        ctx.fillStyle = 'rgba(5,10,15,0.08)'
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
-        ctx.font = '13px monospace'
-        drops.forEach((y, i) => {
-          ctx.fillStyle = `rgba(0,255,136,${Math.random() * 0.3 + 0.05})`
-          ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * 28, y * 22)
-          if (y * 22 > canvas.height && Math.random() > 0.975) drops[i] = 0
-          drops[i]++
-        })
-      }
-      raf = requestAnimationFrame(draw)
-    }
-    raf = requestAnimationFrame(draw)
-    return () => {
-      cancelAnimationFrame(raf)
-      window.removeEventListener('resize', resize)
-    }
-  }, [checking])
-
-  // Typing effect
-  useEffect(() => {
-    if (checking) return
-    const texts = ['اختبار الاختراق...', 'تحليل الشبكات...', 'كسر التشفير...', 'CTF Challenges...', 'Ethical Hacking...']
-    let ti = 0, ci = 0, deleting = false, tid: ReturnType<typeof setTimeout>
-    const type = () => {
-      const full = texts[ti]
-      if (!deleting) {
-        setMatrixText(full.slice(0, ci + 1)); ci++
-        if (ci === full.length) { deleting = true; tid = setTimeout(type, 1800); return }
-      } else {
-        setMatrixText(full.slice(0, ci - 1)); ci--
-        if (ci === 0) { deleting = false; ti = (ti + 1) % texts.length }
-      }
-      tid = setTimeout(type, deleting ? 35 : 75)
-    }
-    tid = setTimeout(type, 600)
-    return () => clearTimeout(tid)
-  }, [checking])
-
-  useEffect(() => {
-    const onScroll = () => setScrollY(window.scrollY)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  if (checking) return (
-    <div style={{ minHeight: '100vh', background: '#050a0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: '40px', height: '40px', border: '3px solid #00ff88', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  )
-
-  const testimonials = [
-    { name: 'أحمد خالد', level: 'خبير', avatar: '👨‍💻', text: 'أفضل منصة عربية للأمن السيبراني! تعلمت في أسبوع ما كنت أبحث عنه لأشهر.', stars: 5, badge: '🏆' },
-    { name: 'سارة محمد', level: 'متقدم', avatar: '👩‍💻', text: 'تحديات CTF رائعة ومحتوى عربي أصيل. النظام التنافسي يجعلك تتعلم أسرع!', stars: 5, badge: '🎯' },
-    { name: 'محمد العلي', level: 'متوسط', avatar: '🧑‍💻', text: 'شرح واضح ومبسط للمفاهيم المعقدة. الشهادات احترافية جداً!', stars: 5, badge: '⭐' },
-    { name: 'ليلى أحمد', level: 'خبير', avatar: '👩‍🎓', text: 'من مبتدئة لخبيرة في 3 أشهر. المنصة غيرت مساري المهني!', stars: 5, badge: '🔐' },
-  ]
-
   return (
     <>
       <style>{`
         *{margin:0;padding:0;box-sizing:border-box;}
+        html{scroll-behavior:smooth;}
         body{font-family:var(--font-cairo),'Cairo',sans-serif;background:#050a0f;color:#e0f0ff;overflow-x:hidden;}
         ::-webkit-scrollbar{width:6px;} ::-webkit-scrollbar-track{background:#0a1520;} ::-webkit-scrollbar-thumb{background:#1a3a50;border-radius:3px;}
         @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(36px)}to{opacity:1;transform:translateY(0)}}
         @keyframes glow{0%,100%{text-shadow:0 0 20px #00ff8855}50%{text-shadow:0 0 50px #00ff88bb,0 0 100px #00ff8833}}
         @keyframes float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-16px) rotate(1deg)}}
         @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
         @keyframes borderPulse{0%,100%{border-color:#00ff8822}50%{border-color:#00ff8866}}
         @keyframes livePulse{0%,100%{opacity:1}50%{opacity:0.4}}
-        @keyframes starTwinkle{0%,100%{opacity:1}50%{opacity:0.7}}
-        .fade-up{animation:fadeUp 0.8s cubic-bezier(0.4,0,0.2,1) both;}
-        .glow-text{animation:glow 3s ease-in-out infinite;}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
         .float-card{animation:float 5s ease-in-out infinite;}
-        .cta-primary{background:#00ff88;color:#050a0f;border:none;padding:15px 36px;border-radius:12px;font-family:var(--font-cairo),'Cairo',sans-serif;font-size:16px;font-weight:900;cursor:pointer;transition:transform 0.3s,box-shadow 0.3s;box-shadow:0 0 30px #00ff8855;will-change:transform;}
+        .cta-primary{background:#00ff88;color:#050a0f;border:none;padding:15px 36px;border-radius:12px;font-family:var(--font-cairo),'Cairo',sans-serif;font-size:16px;font-weight:900;cursor:pointer;transition:transform .3s,box-shadow .3s;box-shadow:0 0 30px #00ff8855;will-change:transform;}
         .cta-primary:hover{transform:translateY(-4px);box-shadow:0 20px 50px rgba(0,255,136,0.4);}
-        .cta-secondary{background:transparent;color:#7090a8;border:1px solid #1a3a50;padding:15px 36px;border-radius:12px;font-family:var(--font-cairo),'Cairo',sans-serif;font-size:16px;cursor:pointer;transition:border-color 0.3s,color 0.3s,transform 0.3s;will-change:transform;}
+        .cta-secondary{background:transparent;color:#7090a8;border:1px solid #1a3a50;padding:15px 36px;border-radius:12px;font-family:var(--font-cairo),'Cairo',sans-serif;font-size:16px;cursor:pointer;transition:border-color .3s,color .3s,transform .3s;will-change:transform;}
         .cta-secondary:hover{border-color:#00ff8866;color:#00ff88;transform:translateY(-4px);}
-        .feature-card{background:#0a1520;border:1px solid #1a3a50;border-radius:16px;padding:28px;transition:transform 0.35s,border-color 0.35s,box-shadow 0.35s;cursor:default;will-change:transform;}
-        .feature-card:hover{transform:translateY(-8px);border-color:#00ff8844;box-shadow:0 24px 60px rgba(0,255,136,0.08);}
-        .mock-screen{background:#0a1520;border:1px solid #1a3a50;border-radius:12px;overflow:hidden;animation:borderPulse 3s ease-in-out infinite;}
-        .nav-cta{background:#00ff88;color:#050a0f;border:none;padding:8px 20px;border-radius:100px;font-family:var(--font-cairo),'Cairo',sans-serif;font-size:13px;font-weight:900;cursor:pointer;transition:transform 0.25s,box-shadow 0.25s;}
+        .nav-cta{background:#00ff88;color:#050a0f;border:none;padding:8px 20px;border-radius:100px;font-family:var(--font-cairo),'Cairo',sans-serif;font-size:13px;font-weight:900;cursor:pointer;transition:transform .25s,box-shadow .25s;}
         .nav-cta:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,255,136,0.3);}
-        .badge{display:inline-flex;align-items:center;gap:6px;background:#0a1520;border:1px solid #00ff8822;border-radius:100px;padding:5px 14px;}
-        .testimonial-card{background:#0a1520;border:1px solid #1a3a50;border-radius:16px;padding:24px;transition:transform 0.35s,border-color 0.35s,box-shadow 0.35s;will-change:transform;}
-        .testimonial-card:hover{transform:translateY(-6px);border-color:#00ff8844;box-shadow:0 20px 50px rgba(0,255,136,0.08);}
-        .live-stat{background:#0a1520;border:1px solid #00ff8822;border-radius:12px;padding:20px 24px;text-align:center;min-height:120px;}
-        .stat-card-inner{min-height:80px;}
+        .nav-link-btn:hover{color:#00ff88 !important;}
+        .nav-outline-btn:hover{border-color:#00ff8866 !important;color:#00ff88 !important;}
+        .feature-card{background:#0a1520;border:1px solid #1a3a50;border-radius:16px;padding:28px;transition:transform .35s,border-color .35s,box-shadow .35s;will-change:transform;}
+        .feature-card:hover{transform:translateY(-8px);border-color:#00ff8844;box-shadow:0 24px 60px rgba(0,255,136,0.08);}
+        .testimonial-card{background:#0a1520;border:1px solid #1a3a50;border-radius:16px;padding:24px;transition:transform .35s,border-color .35s;will-change:transform;}
+        .testimonial-card:hover{transform:translateY(-6px);border-color:#00ff8844;}
+        /* scroll-reveal via CSS only — zero JS */
+        .reveal{opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease;}
+        .reveal.visible{opacity:1;transform:none;}
         @media(max-width:768px){
           .hero-grid{flex-direction:column!important;}
           .mock-card{display:none!important;}
@@ -161,345 +60,150 @@ export default function LandingPage() {
           .features-grid{grid-template-columns:1fr!important;}
           .steps-grid{grid-template-columns:1fr!important;}
           .section-pad{padding:60px 20px!important;}
-          .hero-pad{padding:100px 20px 60px!important;}
-          .nav-pad{padding:0 16px!important;}
           .nav-links{display:none!important;}
-          .cta-banner{padding:40px 20px!important;}
           .screens-grid{grid-template-columns:1fr!important;}
           .testimonials-grid{grid-template-columns:1fr!important;}
           .live-stats-grid{grid-template-columns:repeat(2,1fr)!important;}
         }
         @media(min-width:769px) and (max-width:1100px){
           .features-grid{grid-template-columns:repeat(2,1fr)!important;}
-          .hero-title{font-size:44px!important;}
           .testimonials-grid{grid-template-columns:repeat(2,1fr)!important;}
         }
       `}</style>
 
-      {/* Single matrix canvas — no particles canvas */}
-      <canvas ref={canvasRef} style={{ position:'fixed', inset:0, zIndex:0, opacity:0.25, pointerEvents:'none', willChange:'auto' }} />
-      <div style={{ position:'fixed', inset:0, zIndex:0, background:'radial-gradient(ellipse 80% 60% at 50% -10%,rgba(0,255,136,0.07),transparent)', pointerEvents:'none' }} />
+      {/* Ambient glow — pure CSS, no JS */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, background: 'radial-gradient(ellipse 80% 60% at 50% -10%,rgba(0,255,136,0.06),transparent)', pointerEvents: 'none' }} />
 
-      <div style={{ position:'relative', zIndex:2, opacity: visible ? 1 : 0, transition:'opacity 0.6s' }} dir="rtl">
+      <div style={{ position: 'relative', zIndex: 2 }} dir="rtl">
 
-        {/* NAVBAR */}
-        <nav className="nav-pad" style={{ position:'fixed', top:0, left:0, right:0, zIndex:100, background:`rgba(5,10,15,${Math.min(0.97, 0.7 + scrollY / 400)})`, borderBottom:'1px solid #1a3a50', backdropFilter:'blur(24px)', height:'64px', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 48px', transition:'background 0.3s' }}>
-          <span style={{ fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'20px', fontWeight:'700', color:'#00ff88', letterSpacing:'2px' }}>🔐 CYBER<span style={{ color:'#7090a8' }}>عربي</span></span>
-          <div className="nav-links" style={{ display:'flex', gap:'28px' }}>
-            {['المميزات','كيف تبدأ','التحديات'].map(l => (
-              <button key={l} style={{ background:'none', border:'none', color:'#7090a8', fontSize:'14px', cursor:'pointer', fontFamily:"var(--font-cairo),'Cairo',sans-serif", transition:'color 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.color='#00ff88'}
-                onMouseLeave={e => e.currentTarget.style.color='#7090a8'}>{l}</button>
-            ))}
-          </div>
-          <div style={{ display:'flex', gap:'10px' }}>
-            <button onClick={() => router.push('/login')} style={{ background:'transparent', border:'1px solid #1a3a50', color:'#7090a8', padding:'7px 18px', borderRadius:'100px', fontFamily:"var(--font-cairo),'Cairo',sans-serif", fontSize:'13px', cursor:'pointer', transition:'border-color 0.2s,color 0.2s' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor='#00ff8866'; e.currentTarget.style.color='#00ff88' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor='#1a3a50'; e.currentTarget.style.color='#7090a8' }}>
-              تسجيل الدخول
-            </button>
-            <button className="nav-cta" onClick={() => router.push('/login')}>ابدأ مجاناً ←</button>
-          </div>
-        </nav>
+        {/* Hero — client component (auth check, canvas, typing) */}
+        <LandingHero />
 
-        {/* HERO */}
-        <section className="hero-pad" style={{ minHeight:'100vh', display:'flex', alignItems:'center', padding:'110px 48px 80px', maxWidth:'1280px', margin:'0 auto' }}>
-          <div className="hero-grid" style={{ display:'flex', alignItems:'center', gap:'60px', width:'100%' }}>
-            <div style={{ flex:1 }}>
-              <div className="fade-up badge" style={{ marginBottom:'24px', animationDelay:'0s' }}>
-                <span style={{ animation:'pulse 2s infinite', color:'#00ff88', fontSize:'9px' }}>●</span>
-                <span style={{ color:'#7090a8', fontSize:'12px', fontFamily:"var(--font-space-mono),'Space Mono',monospace" }}>منصة الأمن السيبراني العربية #1</span>
-              </div>
-              <h1 className="fade-up glow-text hero-title" style={{ animationDelay:'0.1s', fontSize:'54px', fontWeight:'900', lineHeight:'1.2', marginBottom:'18px', color:'white' }}>
-                تعلّم<br /><span style={{ color:'#00ff88' }}>الأمن السيبراني</span><br />بالعربي
-              </h1>
-              {/* Fixed height to prevent CLS */}
-              <div className="fade-up" style={{ animationDelay:'0.2s', fontSize:'17px', color:'#5a7a90', marginBottom:'10px', fontFamily:"var(--font-space-mono),'Space Mono',monospace", height:'26px', overflow:'hidden' }}>
-                <span style={{ color:'#00d4ff' }}>&gt; </span>
-                <span style={{ color:'#a0c0d8' }}>{matrixText}</span>
-                <span style={{ animation:'pulse 1s infinite', color:'#00ff88' }}>█</span>
-              </div>
-              <p className="fade-up" style={{ animationDelay:'0.25s', fontSize:'16px', color:'#5a7a90', marginBottom:'36px', maxWidth:'480px', lineHeight:'1.85' }}>
-                منصة تعليمية متكاملة — من المبتدئ للخبير، مع تحديات CTF يومية ونظام نقاط تنافسي. كل المحتوى بالعربي ومجاني 100%.
-              </p>
-              <div className="fade-up hero-btns" style={{ animationDelay:'0.3s', display:'flex', gap:'14px', flexWrap:'wrap', marginBottom:'48px' }}>
-                <button className="cta-primary" onClick={() => router.push('/login')}>🚀 ابدأ مجاناً الآن</button>
-                <button className="cta-secondary" onClick={() => router.push('/login')}>👀 استعرض المنصة</button>
-              </div>
-              {/* Fixed dimensions grid to prevent CLS */}
-              <div className="fade-up stats-grid" style={{ animationDelay:'0.4s', display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'20px', maxWidth:'460px' }}>
-                {[
-                  { n:'6', label:'مسارات تعليمية', color:'#00ff88' },
-                  { n:'11+', label:'درس متاح', color:'#00d4ff' },
-                  { n:'8', label:'تحدي CTF', color:'#ff6b35' },
-                  { n:'100%', label:'مجاني', color:'#ffd700' },
-                ].map((s,i) => (
-                  <div key={i} className="stat-card-inner" style={{ textAlign:'center', background:'#0a152088', border:'1px solid #1a3a50', borderRadius:'10px', padding:'12px 8px', minHeight:'70px', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-                    <p style={{ fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'22px', fontWeight:'900', color:s.color, marginBottom:'3px' }}>{s.n}</p>
-                    <p style={{ color:'#5a7a90', fontSize:'11px' }}>{s.label}</p>
-                  </div>
-                ))}
-              </div>
+        {/* ───── SCREENS — pure HTML, zero JS ───── */}
+        <section className="section-pad" style={{ padding: '80px 48px', background: 'linear-gradient(180deg,transparent,#08111888,transparent)' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+              <span style={{ color: '#00ff88', fontFamily: "var(--font-space-mono),monospace", fontSize: '13px' }}>// لقطات من المنصة</span>
+              <h2 style={{ fontSize: '34px', fontWeight: 900, color: 'white', marginTop: '8px' }}>شاهد المنصة بنفسك</h2>
             </div>
-
-            {/* Mock screen — explicit size to prevent CLS */}
-            <div className="mock-card float-card" style={{ width:'500px', minHeight:'380px', flexShrink:0, position:'relative' }}>
-              <div className="mock-screen" style={{ boxShadow:'0 40px 100px rgba(0,0,0,0.7), 0 0 60px rgba(0,255,136,0.05)' }}>
-                <div style={{ background:'#080f18', padding:'10px 16px', display:'flex', alignItems:'center', gap:'8px', borderBottom:'1px solid #1a3a50' }}>
-                  {['#ff5f57','#febc2e','#28c840'].map(c => <span key={c} style={{ width:'10px', height:'10px', borderRadius:'50%', background:c, display:'inline-block' }}></span>)}
-                  <div style={{ flex:1, background:'#0f1f30', borderRadius:'4px', padding:'4px 12px', marginRight:'8px' }}>
-                    <span style={{ color:'#3a5a70', fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'11px' }}>cybersec-platform.vercel.app/dashboard</span>
-                  </div>
-                </div>
-                <div style={{ padding:'16px', background:'#050a0f' }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'14px', padding:'8px 12px', background:'#080f18', borderRadius:'8px', border:'1px solid #1a3a5066' }}>
-                    <span style={{ color:'#00ff88', fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'11px', fontWeight:'700' }}>🔐 CYBERعربي</span>
-                    <div style={{ display:'flex', gap:'6px' }}>
-                      <span style={{ background:'#0a1520', border:'1px solid #ff6b3544', color:'#ff6b35', padding:'2px 8px', borderRadius:'100px', fontSize:'9px' }}>🎯 CTF</span>
-                      <span style={{ background:'#0a1520', border:'1px solid #1a3a50', color:'#7090a8', padding:'2px 8px', borderRadius:'100px', fontSize:'9px' }}>⭐ 150</span>
-                    </div>
-                  </div>
-                  <div style={{ background:'linear-gradient(135deg,#0a1520,#080f18)', border:'1px solid #1a3a50', borderRadius:'8px', padding:'12px', marginBottom:'10px' }}>
-                    <p style={{ color:'white', fontWeight:'900', fontSize:'13px', marginBottom:'4px' }}>أهلاً، <span style={{ color:'#00ff88' }}>hacker</span> 👋</p>
-                    <p style={{ color:'#5a7a90', fontSize:'10px', marginBottom:'10px' }}>أنت في المستوى 🔥 متوسط</p>
-                    <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'6px' }}>
-                      {[['150','⭐','#ffd700'],['6','📚','#00ff88'],['2','🎯','#00d4ff'],['67%','📈','#a855f7']].map(([v,ic,c],idx) => (
-                        <div key={idx} style={{ background:'#0f1f30', borderRadius:'6px', padding:'6px', textAlign:'center', minHeight:'38px' }}>
-                          <span style={{ fontSize:'12px' }}>{ic}</span>
-                          <p style={{ color:c, fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'11px', fontWeight:'700' }}>{v}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'6px' }}>
-                    {[
-                      { title:'أساسيات الأمن', icon:'🛡️', color:'#00ff88', p:100 },
-                      { title:'الشبكات TCP/IP', icon:'🌐', color:'#00d4ff', p:50 },
-                      { title:'اختبار الاختراق', icon:'💻', color:'#a855f7', p:0 },
-                      { title:'التشفير', icon:'🔐', color:'#ff6ec7', p:0 },
-                    ].map((c,i) => (
-                      <div key={i} style={{ background:'#0a1520', border:`1px solid ${c.p===100?c.color+'44':'#1a3a50'}`, borderRadius:'8px', padding:'10px', minHeight:'72px' }}>
-                        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
-                          <span style={{ fontSize:'16px' }}>{c.icon}</span>
-                          {c.p===100 && <span style={{ color:'#00ff88', fontSize:'9px', fontFamily:"var(--font-space-mono),'Space Mono',monospace" }}>✓ مكتمل</span>}
-                        </div>
-                        <p style={{ color:'white', fontSize:'10px', fontWeight:'700', marginBottom:'6px' }}>{c.title}</p>
-                        <div style={{ background:'#0f1f30', borderRadius:'2px', height:'3px' }}>
-                          <div style={{ background:c.color, height:'3px', borderRadius:'2px', width:`${c.p}%` }}></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div style={{ position:'absolute', top:'-20px', left:'-20px', background:'linear-gradient(135deg,#ff6b35,#ff3366)', borderRadius:'12px', padding:'10px 16px', boxShadow:'0 10px 30px rgba(255,107,53,0.4)', animation:'float 4s ease-in-out infinite', animationDelay:'1s', width:'120px' }}>
-                <p style={{ color:'white', fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'11px', fontWeight:'700' }}>🎯 تحدي اليوم</p>
-                <p style={{ color:'rgba(255,255,255,0.7)', fontSize:'10px' }}>+50 نقطة</p>
-              </div>
-              <div style={{ position:'absolute', bottom:'-15px', right:'-15px', background:'linear-gradient(135deg,#0f2a1a,#0a1520)', border:'1px solid #00ff8844', borderRadius:'12px', padding:'10px 16px', boxShadow:'0 10px 30px rgba(0,255,136,0.2)', animation:'float 4s ease-in-out infinite', animationDelay:'2s', width:'130px' }}>
-                <p style={{ color:'#00ff88', fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'12px', fontWeight:'900' }}>🎉 +25 نقطة</p>
-                <p style={{ color:'#5a7a90', fontSize:'10px' }}>اختبار مكتمل!</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* LIVE STATS */}
-        <section style={{ padding:'0 48px 80px', maxWidth:'1200px', margin:'0 auto' }}>
-          <div className="fade-up" style={{ textAlign:'center', marginBottom:'32px' }}>
-            <div style={{ display:'inline-flex', alignItems:'center', gap:'8px', background:'rgba(0,255,136,0.08)', border:'1px solid rgba(0,255,136,0.2)', borderRadius:'100px', padding:'6px 16px', marginBottom:'16px' }}>
-              <span style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#00ff88', animation:'livePulse 1.5s infinite', display:'inline-block' }}></span>
-              <span style={{ color:'#00ff88', fontSize:'12px', fontFamily:"var(--font-space-mono),'Space Mono',monospace" }}>إحصائيات مباشرة</span>
-            </div>
-          </div>
-          <div className="live-stats-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}>
-            {[
-              { value: liveUsers || '∞', label: 'مستخدم مسجّل', icon: '👥', color: '#00ff88', suffix: '+' },
-              { value: liveLessons || '∞', label: 'درس مكتمل', icon: '✅', color: '#00d4ff', suffix: '+' },
-              { value: livePoints > 1000 ? `${Math.floor(livePoints/1000)}k` : livePoints || '∞', label: 'نقطة مكتسبة', icon: '⭐', color: '#ffd700', suffix: '+' },
-            ].map((stat, i) => (
-              <div key={i} className="live-stat fade-up" style={{ animationDelay:`${i*0.1}s` }}>
-                <div style={{ fontSize:'32px', marginBottom:'8px' }}>{stat.icon}</div>
-                <p style={{ fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'36px', fontWeight:'900', color:stat.color, lineHeight:1, marginBottom:'6px' }}>
-                  {stat.value}{stat.value !== '∞' ? stat.suffix : ''}
-                </p>
-                <p style={{ color:'#5a7a90', fontSize:'13px' }}>{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* SCREENS */}
-        <section className="section-pad" style={{ padding:'80px 48px', background:'linear-gradient(180deg,transparent,#08111888,transparent)' }}>
-          <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
-            <div className="fade-up" style={{ textAlign:'center', marginBottom:'48px' }}>
-              <span style={{ color:'#00ff88', fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'13px' }}>// لقطات من المنصة</span>
-              <h2 style={{ fontSize:'34px', fontWeight:'900', color:'white', marginTop:'8px' }}>شاهد المنصة بنفسك</h2>
-            </div>
-            <div className="screens-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}>
+            <div className="screens-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '20px' }}>
               {[
-                { title:'تحديات CTF', desc:'8 تحديات يومية مع عداد تنازلي', icon:'🎯', color:'#ff6b35',
-                  preview: (
-                    <div style={{ background:'#0a0e1a', padding:'12px', borderRadius:'8px', fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'11px', minHeight:'120px' }}>
-                      <div style={{ color:'#ff6b35', marginBottom:'8px', fontSize:'12px', fontWeight:'700' }}>🎯 تحديات CTF</div>
-                      {['الرسالة المشفرة ✅','تحليل الشبكة 🔒','SQL Injection 🔒'].map((t,i) => (
-                        <div key={i} style={{ background:'#0d1b2e', border:'1px solid #1e3a5f', borderRadius:'6px', padding:'7px 10px', marginBottom:'6px', color: i===0?'#00ff88':'#7090a8', fontSize:'10px' }}>{t}</div>
-                      ))}
-                      <div style={{ textAlign:'center', marginTop:'8px', color:'#ff6b35', fontSize:'10px' }}>⏰ التحدي القادم: 14:32:11</div>
+                { title: 'تحديات CTF', desc: '8 تحديات يومية مع عداد تنازلي', icon: '🎯', color: '#ff6b35' },
+                { title: 'الدروس التفاعلية', desc: 'محتوى عربي أصيل مع اختبارات', icon: '📚', color: '#00ff88' },
+                { title: 'الملف الشخصي', desc: 'تتبع تقدمك وإنجازاتك', icon: '👤', color: '#a855f7' },
+              ].map((s, i) => (
+                <div key={i}>
+                  <div style={{ background: '#0a1520', border: '1px solid #1a3a50', borderRadius: '12px', overflow: 'hidden', marginBottom: '12px', minHeight: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ padding: '24px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '48px', marginBottom: '12px' }}>{s.icon}</div>
+                      <p style={{ color: s.color, fontFamily: "var(--font-space-mono),monospace", fontSize: '13px', fontWeight: 700 }}>{s.title}</p>
                     </div>
-                  )
-                },
-                { title:'الدروس التفاعلية', desc:'محتوى عربي أصيل مع اختبارات', icon:'📚', color:'#00ff88',
-                  preview: (
-                    <div style={{ background:'#050a0f', padding:'12px', borderRadius:'8px', minHeight:'120px' }}>
-                      <div style={{ color:'#00ff88', fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'11px', marginBottom:'8px' }}>01 / 03 &nbsp;✓ مكتمل</div>
-                      <div style={{ color:'white', fontSize:'12px', fontWeight:'700', marginBottom:'6px' }}>أساسيات الأمن السيبراني</div>
-                      <div style={{ color:'#5a7a90', fontSize:'10px', lineHeight:'1.6', marginBottom:'10px' }}>الأمن السيبراني هو مجموعة من التقنيات...</div>
-                      <div style={{ background:'#00ff88', color:'#050a0f', borderRadius:'6px', padding:'6px', textAlign:'center', fontSize:'10px', fontWeight:'900' }}>⚡ ابدأ الاختبار (+15 نقطة)</div>
-                    </div>
-                  )
-                },
-                { title:'الملف الشخصي', desc:'تتبع تقدمك وإنجازاتك', icon:'👤', color:'#a855f7',
-                  preview: (
-                    <div style={{ background:'#0a1520', padding:'12px', borderRadius:'8px', minHeight:'120px' }}>
-                      <div style={{ display:'flex', gap:'10px', alignItems:'center', marginBottom:'10px' }}>
-                        <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:'#0f2a1a', border:'2px solid #a855f7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', flexShrink:0 }}>🧑‍💻</div>
-                        <div><p style={{ color:'white', fontSize:'11px', fontWeight:'700' }}>hacker</p><p style={{ color:'#a855f7', fontSize:'10px', fontFamily:"var(--font-space-mono),'Space Mono',monospace" }}>⚡ متقدم</p></div>
-                        <div style={{ marginRight:'auto', textAlign:'center' }}>
-                          <p style={{ color:'#ffd700', fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'16px', fontWeight:'900' }}>150</p>
-                          <p style={{ color:'#5a7a90', fontSize:'9px' }}>نقطة</p>
-                        </div>
-                      </div>
-                      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'4px' }}>
-                        {['🌱✓','🔥✓','⚡✓','🏆','🎯✓','👑'].map((b,i) => (
-                          <div key={i} style={{ background: i<3||i===4?'#0f1f30':'#080f18', border:`1px solid ${i<3||i===4?'#00ff8833':'#1a3a50'}`, borderRadius:'6px', padding:'6px', textAlign:'center', fontSize:'14px', opacity:i===3||i===5?0.3:1 }}>{b}</div>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                },
-              ].map((screen, i) => (
-                <div key={i} className="fade-up" style={{ animationDelay:`${i*0.15}s` }}>
-                  <div className="mock-screen" style={{ marginBottom:'12px' }}>
-                    <div style={{ background:'#080f18', padding:'8px 12px', display:'flex', gap:'6px', alignItems:'center', borderBottom:'1px solid #1a3a50' }}>
-                      {['#ff5f57','#febc2e','#28c840'].map(c => <span key={c} style={{ width:'8px', height:'8px', borderRadius:'50%', background:c, display:'inline-block' }}></span>)}
-                    </div>
-                    <div style={{ padding:'12px' }}>{screen.preview}</div>
                   </div>
-                  <h3 style={{ color:'white', fontWeight:'700', fontSize:'15px', marginBottom:'4px' }}>
-                    <span style={{ color:screen.color }}>{screen.icon}</span> {screen.title}
+                  <h3 style={{ color: 'white', fontWeight: 700, fontSize: '15px', marginBottom: '4px' }}>
+                    <span style={{ color: s.color }}>{s.icon}</span> {s.title}
                   </h3>
-                  <p style={{ color:'#5a7a90', fontSize:'13px' }}>{screen.desc}</p>
+                  <p style={{ color: '#5a7a90', fontSize: '13px' }}>{s.desc}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* FEATURES */}
-        <section className="section-pad" style={{ padding:'80px 48px' }}>
-          <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
-            <div className="fade-up" style={{ textAlign:'center', marginBottom:'48px' }}>
-              <span style={{ color:'#00ff88', fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'13px' }}>// المميزات</span>
-              <h2 style={{ fontSize:'34px', fontWeight:'900', color:'white', marginTop:'8px' }}>كل ما تحتاجه في مكان واحد</h2>
+        {/* ───── FEATURES — pure HTML ───── */}
+        <section className="section-pad" style={{ padding: '80px 48px' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+              <span style={{ color: '#00ff88', fontFamily: "var(--font-space-mono),monospace", fontSize: '13px' }}>// المميزات</span>
+              <h2 style={{ fontSize: '34px', fontWeight: 900, color: 'white', marginTop: '8px' }}>كل ما تحتاجه في مكان واحد</h2>
             </div>
-            <div className="features-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'20px' }}>
-              {[
-                { icon:'🛡️', color:'#00ff88', title:'6 مسارات تعليمية', desc:'من أساسيات الأمن لاختبار الاختراق والتشفير والهندسة الاجتماعية.' },
-                { icon:'🎯', color:'#ff6b35', title:'تحديات CTF يومية', desc:'8+ تحديات Capture The Flag مع عداد تنازلي ونقاط تنافسية.' },
-                { icon:'⭐', color:'#ffd700', title:'نظام النقاط والمستويات', desc:'4 مستويات — مبتدئ، متوسط، متقدم، خبير — مع إنجازات وشارات.' },
-                { icon:'📱', color:'#00d4ff', title:'يعمل على الجوال', desc:'تعلّم في أي وقت — المنصة متجاوبة بالكامل مع الهواتف.' },
-                { icon:'🔐', color:'#a855f7', title:'محتوى عربي 100%', desc:'كل الشروحات والدروس بالعربي — لا حاجة لترجمة تقنية.' },
-                { icon:'🆓', color:'#00ff88', title:'مجاني بالكامل', desc:'لا اشتراكات ولا رسوم — كل المحتوى مفتوح للجميع.' },
-              ].map((f,i) => (
-                <div key={i} className="feature-card fade-up" style={{ animationDelay:`${i*0.1}s` }}>
-                  <div style={{ width:'50px', height:'50px', borderRadius:'12px', background:f.color+'15', border:`1px solid ${f.color}33`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px', marginBottom:'16px' }}>{f.icon}</div>
-                  <h3 style={{ color:'white', fontWeight:'700', fontSize:'15px', marginBottom:'10px' }}>{f.title}</h3>
-                  <p style={{ color:'#5a7a90', fontSize:'13px', lineHeight:'1.7' }}>{f.desc}</p>
+            <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '20px' }}>
+              {features.map((f, i) => (
+                <div key={i} className="feature-card">
+                  <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: f.color + '15', border: `1px solid ${f.color}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '16px' }}>{f.icon}</div>
+                  <h3 style={{ color: 'white', fontWeight: 700, fontSize: '15px', marginBottom: '10px' }}>{f.title}</h3>
+                  <p style={{ color: '#5a7a90', fontSize: '13px', lineHeight: 1.7 }}>{f.desc}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* TESTIMONIALS */}
-        <section className="section-pad" style={{ padding:'80px 48px', background:'linear-gradient(180deg,transparent,#08111888,transparent)' }}>
-          <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
-            <div className="fade-up" style={{ textAlign:'center', marginBottom:'48px' }}>
-              <span style={{ color:'#00ff88', fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'13px' }}>// آراء المتعلمين</span>
-              <h2 style={{ fontSize:'34px', fontWeight:'900', color:'white', marginTop:'8px' }}>ماذا يقول مجتمعنا</h2>
-              <p style={{ color:'#5a7a90', fontSize:'15px', marginTop:'12px' }}>انضم لآلاف المتعلمين الذين غيّروا مساراتهم المهنية</p>
+        {/* ───── TESTIMONIALS — pure HTML ───── */}
+        <section className="section-pad" style={{ padding: '80px 48px', background: 'linear-gradient(180deg,transparent,#08111888,transparent)' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+              <span style={{ color: '#00ff88', fontFamily: "var(--font-space-mono),monospace", fontSize: '13px' }}>// آراء المتعلمين</span>
+              <h2 style={{ fontSize: '34px', fontWeight: 900, color: 'white', marginTop: '8px' }}>ماذا يقول مجتمعنا</h2>
+              <p style={{ color: '#5a7a90', fontSize: '15px', marginTop: '12px' }}>انضم لآلاف المتعلمين الذين غيّروا مساراتهم المهنية</p>
             </div>
-            <div className="testimonials-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'20px' }}>
+            <div className="testimonials-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '20px' }}>
               {testimonials.map((t, i) => (
-                <div key={i} className="testimonial-card fade-up" style={{ animationDelay:`${i*0.1}s` }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'16px' }}>
-                    <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'#0f1f30', border:'2px solid #00ff8844', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px', flexShrink:0 }}>{t.avatar}</div>
+                <div key={i} className="testimonial-card">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                    <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#0f1f30', border: '2px solid #00ff8844', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>{t.avatar}</div>
                     <div>
-                      <p style={{ color:'white', fontWeight:'700', fontSize:'14px' }}>{t.name}</p>
-                      <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-                        <span style={{ background:'rgba(0,255,136,0.1)', border:'1px solid rgba(0,255,136,0.2)', color:'#00ff88', padding:'1px 8px', borderRadius:'100px', fontSize:'10px', fontFamily:"var(--font-space-mono),'Space Mono',monospace" }}>{t.level}</span>
-                        <span style={{ fontSize:'12px' }}>{t.badge}</span>
+                      <p style={{ color: 'white', fontWeight: 700, fontSize: '14px' }}>{t.name}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.2)', color: '#00ff88', padding: '1px 8px', borderRadius: '100px', fontSize: '10px' }}>{t.level}</span>
+                        <span style={{ fontSize: '12px' }}>{t.badge}</span>
                       </div>
                     </div>
                   </div>
-                  <div style={{ display:'flex', gap:'2px', marginBottom:'12px', height:'20px' }}>
-                    {Array(t.stars).fill(0).map((_, si) => (
-                      <span key={si} style={{ color:'#ffd700', fontSize:'14px', animation:`starTwinkle ${1+si*0.2}s ease-in-out infinite` }}>★</span>
-                    ))}
-                  </div>
-                  <p style={{ color:'#7090a8', fontSize:'13px', lineHeight:'1.7', fontStyle:'italic' }}>"{t.text}"</p>
+                  <div style={{ color: '#ffd700', fontSize: '14px', marginBottom: '12px', height: '20px' }}>★★★★★</div>
+                  <p style={{ color: '#7090a8', fontSize: '13px', lineHeight: 1.7, fontStyle: 'italic' }}>"{t.text}"</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* HOW IT WORKS */}
-        <section className="section-pad" style={{ padding:'80px 48px' }}>
-          <div style={{ maxWidth:'1000px', margin:'0 auto' }}>
-            <div className="fade-up" style={{ textAlign:'center', marginBottom:'48px' }}>
-              <span style={{ color:'#00ff88', fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'13px' }}>// كيف تبدأ</span>
-              <h2 style={{ fontSize:'34px', fontWeight:'900', color:'white', marginTop:'8px' }}>3 خطوات فقط</h2>
+        {/* ───── HOW IT WORKS — pure HTML ───── */}
+        <section className="section-pad" style={{ padding: '80px 48px' }}>
+          <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+              <span style={{ color: '#00ff88', fontFamily: "var(--font-space-mono),monospace", fontSize: '13px' }}>// كيف تبدأ</span>
+              <h2 style={{ fontSize: '34px', fontWeight: 900, color: 'white', marginTop: '8px' }}>3 خطوات فقط</h2>
             </div>
-            <div className="steps-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'24px' }}>
+            <div className="steps-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '24px' }}>
               {[
-                { n:'01', color:'#00ff88', title:'سجّل مجاناً', desc:'أنشئ حسابك في ثوانٍ بإيميلك — لا بطاقة بنكية.' },
-                { n:'02', color:'#00d4ff', title:'اختر مسارك', desc:'ابدأ بالمستوى المناسب — من المبتدئ للخبير.' },
-                { n:'03', color:'#ffd700', title:'تحدّ وتقدّم', desc:'أكمل الدروس، حل CTF، واكسب نقاطاً.' },
-              ].map((s,i) => (
-                <div key={i} className="fade-up" style={{ animationDelay:`${i*0.15}s`, textAlign:'center', padding:'32px 24px', background:'#0a1520', border:`1px solid ${s.color}22`, borderRadius:'16px', minHeight:'180px' }}>
-                  <div style={{ fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'52px', fontWeight:'900', color:s.color, opacity:0.25, marginBottom:'16px', lineHeight:1 }}>{s.n}</div>
-                  <h3 style={{ color:'white', fontWeight:'700', fontSize:'17px', marginBottom:'12px' }}>{s.title}</h3>
-                  <p style={{ color:'#5a7a90', fontSize:'14px', lineHeight:'1.7' }}>{s.desc}</p>
+                { n: '01', color: '#00ff88', title: 'سجّل مجاناً', desc: 'أنشئ حسابك في ثوانٍ بإيميلك — لا بطاقة بنكية.' },
+                { n: '02', color: '#00d4ff', title: 'اختر مسارك', desc: 'ابدأ بالمستوى المناسب — من المبتدئ للخبير.' },
+                { n: '03', color: '#ffd700', title: 'تحدّ وتقدّم', desc: 'أكمل الدروس، حل CTF، واكسب نقاطاً.' },
+              ].map((s, i) => (
+                <div key={i} style={{ textAlign: 'center', padding: '32px 24px', background: '#0a1520', border: `1px solid ${s.color}22`, borderRadius: '16px', minHeight: '180px' }}>
+                  <div style={{ fontFamily: "var(--font-space-mono),monospace", fontSize: '52px', fontWeight: 900, color: s.color, opacity: 0.25, marginBottom: '16px', lineHeight: 1 }}>{s.n}</div>
+                  <h3 style={{ color: 'white', fontWeight: 700, fontSize: '17px', marginBottom: '12px' }}>{s.title}</h3>
+                  <p style={{ color: '#5a7a90', fontSize: '14px', lineHeight: 1.7 }}>{s.desc}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* CTA BANNER */}
-        <section className="section-pad" style={{ padding:'80px 48px' }}>
-          <div style={{ maxWidth:'800px', margin:'0 auto' }}>
-            <div className="fade-up cta-banner" style={{ background:'linear-gradient(135deg,#0f2a1a,#0a1a2e,#150a20)', border:'1px solid #00ff8822', borderRadius:'24px', padding:'64px 48px', textAlign:'center', position:'relative', overflow:'hidden', minHeight:'260px' }}>
-              <div style={{ position:'absolute', top:'-80px', left:'50%', transform:'translateX(-50%)', width:'400px', height:'400px', background:'#00ff8806', borderRadius:'50%', filter:'blur(80px)', pointerEvents:'none' }}></div>
-              <p style={{ color:'#00ff88', fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'13px', marginBottom:'16px', position:'relative' }}>// ابدأ رحلتك</p>
-              <h2 style={{ fontSize:'38px', fontWeight:'900', color:'white', marginBottom:'16px', position:'relative' }}>جاهز تصبح خبيراً؟ 🚀</h2>
-              <p style={{ color:'#7090a8', fontSize:'16px', marginBottom:'36px', position:'relative' }}>انضم الآن وابدأ تعلّم الأمن السيبراني مجاناً</p>
-              <button className="cta-primary" onClick={() => router.push('/login')} style={{ fontSize:'18px', padding:'16px 48px', position:'relative' }}>🔐 ابدأ التعلّم مجاناً</button>
+        {/* ───── CTA — pure HTML ───── */}
+        <section className="section-pad" style={{ padding: '80px 48px' }}>
+          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+            <div style={{ background: 'linear-gradient(135deg,#0f2a1a,#0a1a2e,#150a20)', border: '1px solid #00ff8822', borderRadius: '24px', padding: '64px 48px', textAlign: 'center', position: 'relative', overflow: 'hidden', minHeight: '260px' }}>
+              <div style={{ position: 'absolute', top: '-80px', left: '50%', transform: 'translateX(-50%)', width: '400px', height: '400px', background: '#00ff8806', borderRadius: '50%', filter: 'blur(80px)', pointerEvents: 'none' }} />
+              <p style={{ color: '#00ff88', fontFamily: "var(--font-space-mono),monospace", fontSize: '13px', marginBottom: '16px', position: 'relative' }}>// ابدأ رحلتك</p>
+              <h2 style={{ fontSize: '38px', fontWeight: 900, color: 'white', marginBottom: '16px', position: 'relative' }}>جاهز تصبح خبيراً؟ 🚀</h2>
+              <p style={{ color: '#7090a8', fontSize: '16px', marginBottom: '36px', position: 'relative' }}>انضم الآن وابدأ تعلّم الأمن السيبراني مجاناً</p>
+              <a href="/login" style={{ display: 'inline-block', background: '#00ff88', color: '#050a0f', textDecoration: 'none', padding: '16px 48px', borderRadius: '12px', fontSize: '18px', fontWeight: 900, fontFamily: "var(--font-cairo),sans-serif", position: 'relative', boxShadow: '0 0 30px #00ff8855' }}>
+                🔐 ابدأ التعلّم مجاناً
+              </a>
             </div>
           </div>
         </section>
 
-        {/* FOOTER */}
-        <footer style={{ borderTop:'1px solid #1a3a50', padding:'32px 48px', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'16px' }}>
-          <span style={{ fontFamily:"var(--font-space-mono),'Space Mono',monospace", fontSize:'18px', fontWeight:'700', color:'#00ff88', letterSpacing:'2px' }}>🔐 CYBERعربي</span>
-          <p style={{ color:'#3a5a70', fontSize:'13px' }}>منصة الأمن السيبراني العربية — تعلّم، تحدّ، تقدّم</p>
-          <div style={{ display:'flex', gap:'16px' }}>
-            {['المميزات','الدروس','CTF'].map(l => (
-              <button key={l} onClick={() => router.push('/login')} style={{ background:'none', border:'none', color:'#3a5a70', fontSize:'13px', cursor:'pointer', fontFamily:"var(--font-cairo),'Cairo',sans-serif", transition:'color 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.color='#00ff88'}
-                onMouseLeave={e => e.currentTarget.style.color='#3a5a70'}>{l}</button>
+        {/* ───── FOOTER — pure HTML ───── */}
+        <footer style={{ borderTop: '1px solid #1a3a50', padding: '32px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <span style={{ fontFamily: "var(--font-space-mono),monospace", fontSize: '18px', fontWeight: 700, color: '#00ff88', letterSpacing: '2px' }}>🔐 CYBERعربي</span>
+          <p style={{ color: '#3a5a70', fontSize: '13px' }}>منصة الأمن السيبراني العربية — تعلّم، تحدّ، تقدّم</p>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            {['المميزات', 'الدروس', 'CTF'].map(l => (
+              <a key={l} href="/login" style={{ color: '#3a5a70', fontSize: '13px', textDecoration: 'none', fontFamily: "var(--font-cairo),sans-serif" }}
+                onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => e.currentTarget.style.color = '#00ff88'}
+                onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => e.currentTarget.style.color = '#3a5a70'}>{l}</a>
             ))}
           </div>
         </footer>
