@@ -1,7 +1,7 @@
 // SERVER COMPONENT — no 'use client', no JS shipped for static sections
 import dynamic from 'next/dynamic'
 
-import LandingHeroWrapper from '@/components/LandingHeroWrapper'
+const LandingHero = dynamic(() => import('@/components/LandingHero'), { ssr: false })
 
 const features = [
   { icon: '🛡️', color: '#00ff88', title: '6 مسارات تعليمية', desc: 'من أساسيات الأمن لاختبار الاختراق والتشفير والهندسة الاجتماعية.' },
@@ -47,6 +47,7 @@ export default function LandingPage() {
         .feature-card:hover{transform:translateY(-8px);border-color:#00ff8844;box-shadow:0 24px 60px rgba(0,255,136,0.08);}
         .testimonial-card{background:#0a1520;border:1px solid #1a3a50;border-radius:16px;padding:24px;transition:transform .35s,border-color .35s;will-change:transform;}
         .testimonial-card:hover{transform:translateY(-6px);border-color:#00ff8844;}
+        .footer-link:hover{color:#00ff88 !important;}
         /* scroll-reveal via CSS only — zero JS */
         .reveal{opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease;}
         .reveal.visible{opacity:1;transform:none;}
@@ -77,7 +78,7 @@ export default function LandingPage() {
       <div style={{ position: 'relative', zIndex: 2 }} dir="rtl">
 
         {/* Hero — client component (auth check, canvas, typing) */}
-        <LandingHeroWrapper />
+        <LandingHero />
 
         {/* ───── SCREENS — pure HTML, zero JS ───── */}
         <section className="section-pad" style={{ padding: '80px 48px', background: 'linear-gradient(180deg,transparent,#08111888,transparent)' }}>
@@ -202,8 +203,8 @@ export default function LandingPage() {
           <div style={{ display: 'flex', gap: '16px' }}>
             {['المميزات', 'الدروس', 'CTF'].map(l => (
               <a key={l} href="/login" style={{ color: '#3a5a70', fontSize: '13px', textDecoration: 'none', fontFamily: "var(--font-cairo),sans-serif" }}
-                onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => e.currentTarget.style.color = '#00ff88'}
-                onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => e.currentTarget.style.color = '#3a5a70'}>{l}</a>
+                
+                >{l}</a>
             ))}
           </div>
         </footer>
