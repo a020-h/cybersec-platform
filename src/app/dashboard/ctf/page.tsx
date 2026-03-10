@@ -57,7 +57,7 @@ export default function CTFPage() {
       const today = new Date().toISOString().split('T')[0]
       const { data: chals } = await supabase.from('ctf_challenges_safe').select('*').lte('active_date', today).order('active_date', { ascending: false })
       const { data: solves } = await supabase.from('ctf_solves').select('challenge_id').eq('user_id', user.id)
-      const solvedIds = new Set(solves?.map(s => s.challenge_id))
+      const solvedIds = new Set(solves?.map((s: { challenge_id: string }) => s.challenge_id))
       const withSolved = (chals || []).map(c => ({ ...c, solved: solvedIds.has(c.id) }))
       const todayC = withSolved.find(c => c.active_date === today) || withSolved[0] || null
       setTodayChallenge(todayC)
