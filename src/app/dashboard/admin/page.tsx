@@ -75,7 +75,7 @@ export default function AdminPage() {
     const { data: completionsData } = await supabase.from('lesson_completions').select('course_id')
     if (completionsData) {
       const counts: Record<string, number> = {}
-      completionsData.forEach(c => {
+      completionsData.forEach((c: { course_id: string }) => {
         counts[c.course_id] = (counts[c.course_id] || 0) + 1
       })
       const cs = Object.entries(COURSE_NAMES).map(([id, info]) => ({
