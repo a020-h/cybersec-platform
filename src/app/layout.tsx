@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     description: "منصة تعليمية عربية — دروس تفاعلية وتحديات CTF.",
     images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
-  manifest: "/manifest.json",
+  // Removed manifest — file doesn't exist, causes 404
   icons: { icon: "/favicon.ico", apple: "/apple-icon.png" },
 };
 
@@ -51,21 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ar" dir="rtl" className={`${cairo.variable} ${spaceMono.variable}`}>
       <head>
         <meta name="format-detection" content="telephone=no" />
-        {/* Preload critical fonts to fix LCP font delay */}
-        <link
-          rel="preload"
-          as="font"
-          type="font/woff2"
-          href="/_next/static/media/cairo-arabic-400.woff2"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preload"
-          as="font"
-          type="font/woff2"
-          href="/_next/static/media/cairo-arabic-900.woff2"
-          crossOrigin="anonymous"
-        />
+        {/* No manual font preloads — next/font handles this correctly with real hashed paths */}
       </head>
       <body style={{ fontFamily: "var(--font-cairo), sans-serif", margin: 0 }}>
         {children}

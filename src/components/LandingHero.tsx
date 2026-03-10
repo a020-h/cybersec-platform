@@ -73,7 +73,7 @@ export default function LandingHero() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 48px', transition: 'background 0.3s',
       }}>
-        <span style={{ fontFamily: "var(--font-space-mono),monospace", fontSize: '20px', fontWeight: 700, color: '#00ff88', letterSpacing: '2px' }}>
+        <span style={{ fontFamily: "var(--font-space-mono),monospace", fontSize: '20px', fontWeight: 700, color: '#00cc70', letterSpacing: '2px' }}>
           🔐 CYBER<span style={{ color: '#7090a8' }}>عربي</span>
         </span>
         <div className="nav-links" style={{ display: 'flex', gap: '28px' }}>
@@ -90,23 +90,24 @@ export default function LandingHero() {
       </nav>
 
       {/* HERO — renders immediately, no loading state */}
+      <header>
       <section style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '110px 48px 80px', maxWidth: '1280px', margin: '0 auto' }}>
         <div className="hero-grid" style={{ display: 'flex', alignItems: 'center', gap: '60px', width: '100%' }}>
           <div style={{ flex: 1 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#0a1520', border: '1px solid #00ff8822', borderRadius: '100px', padding: '5px 14px', marginBottom: '24px' }}>
-              <span style={{ animation: 'pulse 2s infinite', color: '#00ff88', fontSize: '9px' }}>●</span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#0a1520', border: '1px solid #00cc7022', borderRadius: '100px', padding: '5px 14px', marginBottom: '24px' }}>
+              <span style={{ animation: 'pulse 2s infinite', color: '#00cc70', fontSize: '9px' }}>●</span>
               <span style={{ color: '#7090a8', fontSize: '12px', fontFamily: "var(--font-space-mono),monospace" }}>منصة الأمن السيبراني العربية #1</span>
             </div>
 
             {/* LCP element — painted immediately in SSR HTML */}
             <h1 className="hero-title" style={{ fontSize: '54px', fontWeight: 900, lineHeight: 1.2, marginBottom: '18px', color: 'white', animation: 'glow 3s ease-in-out infinite' }}>
-              تعلّم<br /><span style={{ color: '#00ff88' }}>الأمن السيبراني</span><br />بالعربي
+              تعلّم<br /><span style={{ color: '#00cc70' }}>الأمن السيبراني</span><br />بالعربي
             </h1>
 
             <div style={{ fontSize: '17px', color: '#5a7a90', marginBottom: '10px', fontFamily: "var(--font-space-mono),monospace", height: '26px', overflow: 'hidden' }}>
               <span style={{ color: '#00d4ff' }}>&gt; </span>
               <span style={{ color: '#a0c0d8' }}>{matrixText}</span>
-              <span style={{ animation: 'pulse 1s infinite', color: '#00ff88' }}>█</span>
+              <span style={{ animation: 'pulse 1s infinite', color: '#00cc70' }}>█</span>
             </div>
 
             <p style={{ fontSize: '16px', color: '#5a7a90', marginBottom: '36px', maxWidth: '480px', lineHeight: 1.85 }}>
@@ -120,7 +121,7 @@ export default function LandingHero() {
 
             <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '20px', maxWidth: '460px' }}>
               {[
-                { n: '6', label: 'مسارات', color: '#00ff88' },
+                { n: '6', label: 'مسارات', color: '#00cc70' },
                 { n: '11+', label: 'درس', color: '#00d4ff' },
                 { n: '8', label: 'تحدي CTF', color: '#ff6b35' },
                 { n: '100%', label: 'مجاني', color: '#ffd700' },
@@ -144,17 +145,17 @@ export default function LandingHero() {
               </div>
               <div style={{ padding: '16px', background: '#050a0f' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', padding: '8px 12px', background: '#080f18', borderRadius: '8px', border: '1px solid #1a3a5066' }}>
-                  <span style={{ color: '#00ff88', fontFamily: "var(--font-space-mono),monospace", fontSize: '11px', fontWeight: 700 }}>🔐 CYBERعربي</span>
+                  <span style={{ color: '#00cc70', fontFamily: "var(--font-space-mono),monospace", fontSize: '11px', fontWeight: 700 }}>🔐 CYBERعربي</span>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <span style={{ background: '#0a1520', border: '1px solid #ff6b3544', color: '#ff6b35', padding: '2px 8px', borderRadius: '100px', fontSize: '9px' }}>🎯 CTF</span>
                     <span style={{ background: '#0a1520', border: '1px solid #1a3a50', color: '#7090a8', padding: '2px 8px', borderRadius: '100px', fontSize: '9px' }}>⭐ 150</span>
                   </div>
                 </div>
                 <div style={{ background: 'linear-gradient(135deg,#0a1520,#080f18)', border: '1px solid #1a3a50', borderRadius: '8px', padding: '12px', marginBottom: '10px' }}>
-                  <p style={{ color: 'white', fontWeight: 900, fontSize: '13px', marginBottom: '4px' }}>أهلاً، <span style={{ color: '#00ff88' }}>hacker</span> 👋</p>
+                  <p style={{ color: 'white', fontWeight: 900, fontSize: '13px', marginBottom: '4px' }}>أهلاً، <span style={{ color: '#00cc70' }}>hacker</span> 👋</p>
                   <p style={{ color: '#5a7a90', fontSize: '10px', marginBottom: '10px' }}>أنت في المستوى 🔥 متوسط</p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '6px' }}>
-                    {[['150', '⭐', '#ffd700'], ['6', '📚', '#00ff88'], ['2', '🎯', '#00d4ff'], ['67%', '📈', '#a855f7']].map(([v, ic, c], idx) => (
+                    {[['150', '⭐', '#ffd700'], ['6', '📚', '#00cc70'], ['2', '🎯', '#00d4ff'], ['67%', '📈', '#a855f7']].map(([v, ic, c], idx) => (
                       <div key={idx} style={{ background: '#0f1f30', borderRadius: '6px', padding: '6px', textAlign: 'center', minHeight: '38px' }}>
                         <span style={{ fontSize: '12px' }}>{ic}</span>
                         <p style={{ color: c, fontFamily: "var(--font-space-mono),monospace", fontSize: '11px', fontWeight: 700 }}>{v}</p>
@@ -164,7 +165,7 @@ export default function LandingHero() {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '6px' }}>
                   {[
-                    { title: 'أساسيات الأمن', icon: '🛡️', color: '#00ff88', p: 100 },
+                    { title: 'أساسيات الأمن', icon: '🛡️', color: '#00cc70', p: 100 },
                     { title: 'الشبكات TCP/IP', icon: '🌐', color: '#00d4ff', p: 50 },
                     { title: 'اختبار الاختراق', icon: '💻', color: '#a855f7', p: 0 },
                     { title: 'التشفير', icon: '🔐', color: '#ff6ec7', p: 0 },
@@ -172,7 +173,7 @@ export default function LandingHero() {
                     <div key={i} style={{ background: '#0a1520', border: `1px solid ${c.p === 100 ? c.color + '44' : '#1a3a50'}`, borderRadius: '8px', padding: '10px', minHeight: '72px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                         <span style={{ fontSize: '16px' }}>{c.icon}</span>
-                        {c.p === 100 && <span style={{ color: '#00ff88', fontSize: '9px' }}>✓ مكتمل</span>}
+                        {c.p === 100 && <span style={{ color: '#00cc70', fontSize: '9px' }}>✓ مكتمل</span>}
                       </div>
                       <p style={{ color: 'white', fontSize: '10px', fontWeight: 700, marginBottom: '6px' }}>{c.title}</p>
                       <div style={{ background: '#0f1f30', borderRadius: '2px', height: '3px' }}>
@@ -187,29 +188,30 @@ export default function LandingHero() {
               <p style={{ color: 'white', fontFamily: "var(--font-space-mono),monospace", fontSize: '11px', fontWeight: 700 }}>🎯 تحدي اليوم</p>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10px' }}>+50 نقطة</p>
             </div>
-            <div style={{ position: 'absolute', bottom: '-15px', right: '-15px', background: 'linear-gradient(135deg,#0f2a1a,#0a1520)', border: '1px solid #00ff8844', borderRadius: '12px', padding: '10px 16px', animation: 'float 4s ease-in-out infinite', animationDelay: '2s', width: '130px' }}>
-              <p style={{ color: '#00ff88', fontFamily: "var(--font-space-mono),monospace", fontSize: '12px', fontWeight: 900 }}>🎉 +25 نقطة</p>
+            <div style={{ position: 'absolute', bottom: '-15px', right: '-15px', background: 'linear-gradient(135deg,#0f2a1a,#0a1520)', border: '1px solid #00cc7044', borderRadius: '12px', padding: '10px 16px', animation: 'float 4s ease-in-out infinite', animationDelay: '2s', width: '130px' }}>
+              <p style={{ color: '#00cc70', fontFamily: "var(--font-space-mono),monospace", fontSize: '12px', fontWeight: 900 }}>🎉 +25 نقطة</p>
               <p style={{ color: '#5a7a90', fontSize: '10px' }}>اختبار مكتمل!</p>
             </div>
           </div>
         </div>
       </section>
+      </header>
 
       {/* LIVE STATS */}
       <section style={{ padding: '0 48px 80px', maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.2)', borderRadius: '100px', padding: '6px 16px' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00ff88', animation: 'livePulse 1.5s infinite', display: 'inline-block' }} />
-            <span style={{ color: '#00ff88', fontSize: '12px', fontFamily: "var(--font-space-mono),monospace" }}>إحصائيات مباشرة</span>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00cc70', animation: 'livePulse 1.5s infinite', display: 'inline-block' }} />
+            <span style={{ color: '#00cc70', fontSize: '12px', fontFamily: "var(--font-space-mono),monospace" }}>إحصائيات مباشرة</span>
           </div>
         </div>
         <div className="live-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '20px' }}>
           {[
-            { value: liveUsers, label: 'مستخدم مسجّل', icon: '👥', color: '#00ff88' },
+            { value: liveUsers, label: 'مستخدم مسجّل', icon: '👥', color: '#00cc70' },
             { value: liveLessons, label: 'درس مكتمل', icon: '✅', color: '#00d4ff' },
             { value: ptsFmt, label: 'نقطة مكتسبة', icon: '⭐', color: '#ffd700' },
           ].map((stat, i) => (
-            <div key={i} style={{ background: '#0a1520', border: '1px solid #00ff8822', borderRadius: '12px', padding: '20px 24px', textAlign: 'center', minHeight: '120px' }}>
+            <div key={i} style={{ background: '#0a1520', border: '1px solid #00cc7022', borderRadius: '12px', padding: '20px 24px', textAlign: 'center', minHeight: '120px' }}>
               <div style={{ fontSize: '32px', marginBottom: '8px' }}>{stat.icon}</div>
               <p style={{ fontFamily: "var(--font-space-mono),monospace", fontSize: '36px', fontWeight: 900, color: stat.color, lineHeight: 1, marginBottom: '6px' }}>
                 {stat.value}+
