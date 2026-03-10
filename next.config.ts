@@ -5,9 +5,13 @@ const nextConfig: NextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
 
-  // ✅ تقليل Legacy JS polyfills
   experimental: {
-    optimizePackageImports: ['@supabase/supabase-js'],
+    // ✅ يحمّل فقط الـ exports المستخدمة فعلاً
+    optimizePackageImports: [
+      '@supabase/supabase-js',
+      '@supabase/ssr',
+      '@supabase/auth-helpers-nextjs',
+    ],
   },
 
   async headers() {
@@ -55,6 +59,9 @@ const nextConfig: NextConfig = {
   },
 
   poweredByHeader: false,
+
+  // ✅ يقلل Legacy JS polyfills بـ ~14 KiB
+  transpilePackages: ['@supabase/supabase-js', '@supabase/ssr'],
 
   images: {
     remotePatterns: [

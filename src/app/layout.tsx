@@ -7,10 +7,11 @@ import { Cairo, Space_Mono } from 'next/font/google'
 // ✅ استخدام next/font بدل @import في CSS — يحمّل الخط بشكل optimized تلقائياً
 const cairo = Cairo({
   subsets: ['arabic', 'latin'],
-  weight: ['400', '600', '700', '900'],
+  weight: ['700', '900'],        // ✅ فقط الأوزان المستخدمة — يقلل woff2 files
   variable: '--font-cairo',
-  display: 'swap',      // ✅ swap يمنع FOIT
+  display: 'swap',
   preload: true,
+  adjustFontFallback: false,    // ✅ يمنع CLS إضافي
 })
 
 const spaceMono = Space_Mono({
