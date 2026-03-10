@@ -7,35 +7,32 @@ const MatrixCanvas = lazy(() => import('./MatrixCanvas'))
 
 export default function LandingHero() {
   const router = useRouter()
-  const [checking, setChecking] = useState(true)
-  const [visible, setVisible] = useState(false)
-  const [matrixText, setMatrixText] = useState('')
+  const [matrixText, setMatrixText] = useState('اختبار الاختراق...')
   const [scrollY, setScrollY] = useState(0)
   const [liveUsers, setLiveUsers] = useState<number>(0)
   const [liveLessons, setLiveLessons] = useState<number>(0)
   const [livePoints, setLivePoints] = useState<number>(0)
 
+  // Auth check — silent redirect, doesn't block render
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.push('/dashboard')
-      else { setChecking(false); setTimeout(() => setVisible(true), 50) }
+      if (session) router.replace('/dashboard')
     })
   }, [])
 
+  // Fetch live stats
   useEffect(() => {
-    if (checking) return
     supabase.from('profiles').select('*', { count: 'exact', head: true }).then(({ count }) => setLiveUsers(count || 0))
     supabase.from('lesson_completions').select('*', { count: 'exact', head: true }).then(({ count }) => setLiveLessons(count || 0))
-    supabase.from('profiles').select('points').then(({ data }) => {
+    supabase.from('profiles').select('points').then(({ data }) =>
       setLivePoints(data?.reduce((s, p) => s + (p.points || 0), 0) || 0)
-    })
-  }, [checking])
+    )
+  }, [])
 
   // Typing effect
   useEffect(() => {
-    if (checking) return
     const texts = ['اختبار الاختراق...', 'تحليل الشبكات...', 'كسر التشفير...', 'CTF Challenges...', 'Ethical Hacking...']
-    let ti = 0, ci = 0, deleting = false
+    let ti = 0, ci = texts[0].length, deleting = true
     let tid: ReturnType<typeof setTimeout>
     const type = () => {
       const full = texts[ti]
@@ -48,9 +45,9 @@ export default function LandingHero() {
       }
       tid = setTimeout(type, deleting ? 35 : 75)
     }
-    tid = setTimeout(type, 800)
+    tid = setTimeout(type, 1200)
     return () => clearTimeout(tid)
-  }, [checking])
+  }, [])
 
   useEffect(() => {
     const onScroll = () => setScrollY(window.scrollY)
@@ -58,19 +55,12 @@ export default function LandingHero() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  if (checking) return (
-    <div style={{ minHeight: '100vh', background: '#050a0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: '36px', height: '36px', border: '3px solid #00ff88', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  )
-
   const navBg = `rgba(5,10,15,${Math.min(0.97, 0.7 + scrollY / 400)})`
-  const ptsFmt = livePoints > 1000 ? `${Math.floor(livePoints / 1000)}k` : String(livePoints || '∞')
+  const ptsFmt = livePoints > 1000 ? `${Math.floor(livePoints / 1000)}k` : String(livePoints || '0')
 
   return (
-    <div style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.5s' }}>
-      {/* Matrix canvas — lazy loaded after hero paints */}
+    <>
+      {/* Matrix canvas — lazy, loads after LCP paints */}
       <Suspense fallback={null}>
         <MatrixCanvas />
       </Suspense>
@@ -99,31 +89,35 @@ export default function LandingHero() {
         </div>
       </nav>
 
-      {/* HERO */}
+      {/* HERO — renders immediately, no loading state */}
       <section style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '110px 48px 80px', maxWidth: '1280px', margin: '0 auto' }}>
         <div className="hero-grid" style={{ display: 'flex', alignItems: 'center', gap: '60px', width: '100%' }}>
-          {/* Text side */}
           <div style={{ flex: 1 }}>
-            <div className="hero-badge fade-up" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#0a1520', border: '1px solid #00ff8822', borderRadius: '100px', padding: '5px 14px', marginBottom: '24px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#0a1520', border: '1px solid #00ff8822', borderRadius: '100px', padding: '5px 14px', marginBottom: '24px' }}>
               <span style={{ animation: 'pulse 2s infinite', color: '#00ff88', fontSize: '9px' }}>●</span>
               <span style={{ color: '#7090a8', fontSize: '12px', fontFamily: "var(--font-space-mono),monospace" }}>منصة الأمن السيبراني العربية #1</span>
             </div>
-            {/* LCP element — no animation delay so it paints immediately */}
-            <h1 style={{ fontSize: '54px', fontWeight: 900, lineHeight: 1.2, marginBottom: '18px', color: 'white', animation: 'glow 3s ease-in-out infinite' }} className="hero-title">
+
+            {/* LCP element — painted immediately in SSR HTML */}
+            <h1 className="hero-title" style={{ fontSize: '54px', fontWeight: 900, lineHeight: 1.2, marginBottom: '18px', color: 'white', animation: 'glow 3s ease-in-out infinite' }}>
               تعلّم<br /><span style={{ color: '#00ff88' }}>الأمن السيبراني</span><br />بالعربي
             </h1>
+
             <div style={{ fontSize: '17px', color: '#5a7a90', marginBottom: '10px', fontFamily: "var(--font-space-mono),monospace", height: '26px', overflow: 'hidden' }}>
               <span style={{ color: '#00d4ff' }}>&gt; </span>
               <span style={{ color: '#a0c0d8' }}>{matrixText}</span>
               <span style={{ animation: 'pulse 1s infinite', color: '#00ff88' }}>█</span>
             </div>
+
             <p style={{ fontSize: '16px', color: '#5a7a90', marginBottom: '36px', maxWidth: '480px', lineHeight: 1.85 }}>
               منصة تعليمية متكاملة — من المبتدئ للخبير، مع تحديات CTF يومية ونظام نقاط تنافسي. كل المحتوى بالعربي ومجاني 100%.
             </p>
+
             <div className="hero-btns" style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '48px' }}>
               <button className="cta-primary" onClick={() => router.push('/login')}>🚀 ابدأ مجاناً الآن</button>
               <button className="cta-secondary" onClick={() => router.push('/login')}>👀 استعرض المنصة</button>
             </div>
+
             <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '20px', maxWidth: '460px' }}>
               {[
                 { n: '6', label: 'مسارات', color: '#00ff88' },
@@ -211,20 +205,20 @@ export default function LandingHero() {
         </div>
         <div className="live-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '20px' }}>
           {[
-            { value: liveUsers || '∞', label: 'مستخدم مسجّل', icon: '👥', color: '#00ff88' },
-            { value: liveLessons || '∞', label: 'درس مكتمل', icon: '✅', color: '#00d4ff' },
+            { value: liveUsers, label: 'مستخدم مسجّل', icon: '👥', color: '#00ff88' },
+            { value: liveLessons, label: 'درس مكتمل', icon: '✅', color: '#00d4ff' },
             { value: ptsFmt, label: 'نقطة مكتسبة', icon: '⭐', color: '#ffd700' },
           ].map((stat, i) => (
             <div key={i} style={{ background: '#0a1520', border: '1px solid #00ff8822', borderRadius: '12px', padding: '20px 24px', textAlign: 'center', minHeight: '120px' }}>
               <div style={{ fontSize: '32px', marginBottom: '8px' }}>{stat.icon}</div>
               <p style={{ fontFamily: "var(--font-space-mono),monospace", fontSize: '36px', fontWeight: 900, color: stat.color, lineHeight: 1, marginBottom: '6px' }}>
-                {stat.value}{stat.value !== '∞' ? '+' : ''}
+                {stat.value}+
               </p>
               <p style={{ color: '#5a7a90', fontSize: '13px' }}>{stat.label}</p>
             </div>
           ))}
         </div>
       </section>
-    </div>
+    </>
   )
 }
