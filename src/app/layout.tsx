@@ -1,61 +1,52 @@
-import type { Metadata, Viewport } from "next";
-import { Cairo, Space_Mono } from "next/font/google";
-import "./globals.css";
+// أضف هذا في src/app/layout.tsx داخل <head>
+// مثال على الشكل الصحيح:
 
+import type { Metadata } from 'next'
+import { Cairo, Space_Mono } from 'next/font/google'
+
+// ✅ استخدام next/font بدل @import في CSS — يحمّل الخط بشكل optimized تلقائياً
 const cairo = Cairo({
-  variable: "--font-cairo",
-  subsets: ["arabic", "latin"],
-  weight: ["400", "600", "700", "900"],
-  display: "swap",
+  subsets: ['arabic', 'latin'],
+  weight: ['400', '600', '700', '900'],
+  variable: '--font-cairo',
+  display: 'swap',      // ✅ swap يمنع FOIT
   preload: true,
-});
+})
 
 const spaceMono = Space_Mono({
-  variable: "--font-space-mono",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  display: "swap",
-  preload: true,
-});
-
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  themeColor: "#050a0f",
-};
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-space-mono',
+  display: 'swap',
+  preload: false,       // ✅ Space Mono ليس critical
+})
 
 export const metadata: Metadata = {
-  title: {
-    default: "CYBERArabi | تعلم الأمن السيبراني بالعربي",
-    template: "%s | CYBERArabi",
-  },
-  description: "منصة تعليمية عربية متخصصة في الأمن السيبراني — تعلم اختبار الاختراق، الشبكات، التشفير، والهندسة الاجتماعية عبر دروس تفاعلية وتحديات CTF.",
-  keywords: ["أمن سيبراني", "اختبار اختراق", "cybersecurity arabic", "CTF عربي", "ethical hacking", "CYBERArabi"],
-  authors: [{ name: "CYBERArabi Team" }],
-  robots: { index: true, follow: true },
+  title: 'CYBERعربي — تعلّم الأمن السيبراني بالعربي',
+  description: 'منصة تعليمية متكاملة للخبير — من المبتدئ للخبير. مع تحديات CTF يومية ونظام نقاط تنافسي ومجاني 100٪',
+  keywords: 'أمن سيبراني, تعلم, عربي, CTF, اختبار اختراق, هكر أخلاقي',
   openGraph: {
-    type: "website",
-    locale: "ar_SA",
-    url: "https://cybersec-platform.vercel.app",
-    siteName: "CYBERArabi",
-    title: "CYBERArabi | تعلم الأمن السيبراني بالعربي",
-    description: "منصة تعليمية عربية — دروس تفاعلية وتحديات CTF.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    title: 'CYBERعربي',
+    description: 'تعلّم الأمن السيبراني بالعربي مجاناً',
+    type: 'website',
   },
-  // Removed manifest — file doesn't exist, causes 404
-  icons: { icon: "/favicon.ico", apple: "/apple-icon.png" },
-};
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="ar" dir="rtl" className={`${cairo.variable} ${spaceMono.variable}`}>
       <head>
-        <meta name="format-detection" content="telephone=no" />
-        {/* No manual font preloads — next/font handles this correctly with real hashed paths */}
+        {/* ✅ Preconnect لـ Supabase — يقلل TTFB */}
+        <link rel="preconnect" href="https://gezzwkjitzfpqqyghddy.supabase.co" />
+        <link rel="dns-prefetch" href="https://gezzwkjitzfpqqyghddy.supabase.co" />
       </head>
-      <body style={{ fontFamily: "var(--font-cairo), sans-serif", margin: 0 }}>
+      <body style={{ margin: 0, background: '#050a0f' }}>
         {children}
       </body>
     </html>
-  );
+  )
 }

@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
 
+  // ✅ تقليل Legacy JS polyfills
+  experimental: {
+    optimizePackageImports: ['@supabase/supabase-js'],
+  },
+
   async headers() {
     return [
       {
@@ -22,8 +27,9 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-              "style-src 'self' 'unsafe-inline'",
-              "font-src 'self'",
+              // ✅ أضفنا fonts.googleapis.com و fonts.gstatic.com
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https:",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com",
               "frame-ancestors 'none'",
@@ -33,7 +39,6 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // Cache static assets aggressively
       {
         source: '/_next/static/(.*)',
         headers: [
