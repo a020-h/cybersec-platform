@@ -63,7 +63,7 @@ export default function AdminPage() {
       const dist = POINT_RANGES.map(r => ({
         label: r.label,
         color: r.color,
-        count: usersData.filter(u => u.points >= r.min && u.points <= r.max).length
+        count: usersData.filter((u: User) => u.points >= r.min && u.points <= r.max).length
       }))
       setLevelDist(dist)
     }
