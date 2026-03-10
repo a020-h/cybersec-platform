@@ -7,6 +7,9 @@ type User = { id: string; username: string; points: number; avatar: string; is_a
 type Lesson = { id: string; course_id: string; title: string; order_num: number }
 type CTFChallenge = { title: string; description: string; category: string; points: number; flag: string; difficulty: string; hints: string }
 type CourseStats = { course_id: string; completions: number; name: string; color: string }
+type CompletionRow = { course_id: string }
+type UserIdRow = { user_id: string }
+type PointsRow = { points: number }
 
 const COURSE_NAMES: Record<string, { name: string; color: string }> = {
   '00000000-0000-0000-0000-000000000001': { name: '🛡️ أساسيات الأمن', color: '#00ff88' },
@@ -58,24 +61,22 @@ export default function AdminPage() {
   const loadAll = async () => {
     const { data: usersData } = await supabase.from('profiles').select('*').order('points', { ascending: false })
     if (usersData) {
-      setUsers(usersData)
-      // Level distribution
+      setUsers(usersData as User[])
       const dist = POINT_RANGES.map(r => ({
         label: r.label,
         color: r.color,
-        count: usersData.filter((u: User) => u.points >= r.min && u.points <= r.max).length
+        count: (usersData as User[]).filter((u: User) => u.points >= r.min && u.points <= r.max).length
       }))
       setLevelDist(dist)
     }
 
     const { data: lessonsData } = await supabase.from('lessons').select('id, course_id, title, order_num').order('course_id').order('order_num')
-    if (lessonsData) setLessons(lessonsData)
+    if (lessonsData) setLessons(lessonsData as Lesson[])
 
-    // Course completions stats
     const { data: completionsData } = await supabase.from('lesson_completions').select('course_id')
     if (completionsData) {
       const counts: Record<string, number> = {}
-      completionsData.forEach((c: { course_id: string }) => {
+      ;(completionsData as CompletionRow[]).forEach((c: CompletionRow) => {
         counts[c.course_id] = (counts[c.course_id] || 0) + 1
       })
       const cs = Object.entries(COURSE_NAMES).map(([id, info]) => ({
@@ -87,16 +88,17 @@ export default function AdminPage() {
       setCourseStats(cs)
     }
 
-    // Top completors
     const { data: compByUser } = await supabase.from('lesson_completions').select('user_id')
     if (compByUser && usersData) {
       const userCounts: Record<string, number> = {}
-      compByUser.forEach(c => { userCounts[c.user_id] = (userCounts[c.user_id] || 0) + 1 })
+      ;(compByUser as UserIdRow[]).forEach((c: UserIdRow) => {
+        userCounts[c.user_id] = (userCounts[c.user_id] || 0) + 1
+      })
       const top = Object.entries(userCounts)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
         .map(([uid, count]) => {
-          const u = usersData.find(x => x.id === uid)
+          const u = (usersData as User[]).find((x: User) => x.id === uid)
           return { username: u?.username || 'مجهول', avatar: u?.avatar || '🧑‍💻', count }
         })
       setTopCompletors(top)
@@ -108,7 +110,7 @@ export default function AdminPage() {
     const { count: completionsCount } = await supabase.from('lesson_completions').select('*', { count: 'exact', head: true })
     setStats({
       totalUsers: usersCount || 0,
-      totalPoints: pointsData?.reduce((sum, p) => sum + (p.points || 0), 0) || 0,
+      totalPoints: (pointsData as PointsRow[] | null)?.reduce((sum: number, p: PointsRow) => sum + (p.points || 0), 0) || 0,
       totalLessons: lessonsCount || 0,
       totalCompletions: completionsCount || 0,
     })
@@ -120,13 +122,13 @@ export default function AdminPage() {
   }
 
   const deleteUser = async (userId: string) => {
-  if (!confirm('هل أنت متأكد من حذف هذا المستخدم؟')) return
-  setDeletingUser(userId)
-  const { error } = await supabase.rpc('delete_user', { target_user_id: userId })
-  if (error) showMsg('فشل الحذف: ' + error.message, 'error')
-  else { showMsg('تم حذف المستخدم ✓'); await loadAll() }
-  setDeletingUser(null)
-}
+    if (!confirm('هل أنت متأكد من حذف هذا المستخدم؟')) return
+    setDeletingUser(userId)
+    const { error } = await supabase.rpc('delete_user', { target_user_id: userId })
+    if (error) showMsg('فشل الحذف: ' + error.message, 'error')
+    else { showMsg('تم حذف المستخدم ✓'); await loadAll() }
+    setDeletingUser(null)
+  }
 
   const toggleAdmin = async (userId: string, currentVal: boolean) => {
     const { error } = await supabase.from('profiles').update({ is_admin: !currentVal }).eq('id', userId)
@@ -226,7 +228,6 @@ export default function AdminPage() {
       <div className="bg-grid"></div>
       <div className="bg-glow"></div>
 
-      {/* Navbar */}
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(5,10,15,0.9)', borderBottom: '1px solid rgba(255,51,102,0.2)', backdropFilter: 'blur(24px)', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px' }} className="navbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontFamily: 'Space Mono, monospace', fontSize: '17px', fontWeight: '700', color: '#ff3366', letterSpacing: '2px', textShadow: '0 0 20px rgba(255,51,102,0.4)' }}>🛡️ ADMIN</span>
@@ -239,7 +240,6 @@ export default function AdminPage() {
         </button>
       </nav>
 
-      {/* Toast */}
       {msg && (
         <div style={{ position: 'fixed', top: '76px', left: '50%', transform: 'translateX(-50%)', background: msgType === 'success' ? 'rgba(0,255,136,0.12)' : 'rgba(255,51,102,0.12)', border: `1px solid ${msgType === 'success' ? 'rgba(0,255,136,0.3)' : 'rgba(255,51,102,0.3)'}`, color: msgType === 'success' ? '#00ff88' : '#ff6b6b', padding: '12px 28px', borderRadius: '100px', fontFamily: 'Space Mono, monospace', fontSize: '13px', zIndex: 999, backdropFilter: 'blur(20px)', animation: 'slideDown 0.3s ease', whiteSpace: 'nowrap' }}>
           {msgType === 'success' ? '✓' : '✗'} {msg}
@@ -248,7 +248,6 @@ export default function AdminPage() {
 
       <div dir="rtl" className="page-wrap" style={{ maxWidth: '1200px', margin: '0 auto', padding: '90px 24px 60px', position: 'relative', zIndex: 1 }}>
 
-        {/* Tabs */}
         <div style={{ display: 'flex', gap: '6px', background: 'rgba(8,15,24,0.8)', border: '1px solid #1a3a50', borderRadius: '14px', padding: '6px', marginBottom: '30px', width: 'fit-content', backdropFilter: 'blur(10px)' }}>
           {tabs.map(tab => (
             <button key={tab.key} className="tab-btn"
@@ -259,21 +258,18 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* ===== STATS ===== */}
         {activeTab === 'stats' && (
           <div className="fade-up">
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
               <div style={{ width: '3px', height: '20px', background: '#ff3366', borderRadius: '2px' }}></div>
               <h2 style={{ color: 'white', fontWeight: '900', fontSize: '20px' }}>إحصائيات المنصة</h2>
             </div>
-
-            {/* KPI Cards */}
             <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px', marginBottom: '28px' }}>
               {[
-                { label: 'المستخدمون', value: stats.totalUsers, icon: '👥', color: '#00ff88', sub: 'مسجل' },
-                { label: 'إجمالي النقاط', value: stats.totalPoints.toLocaleString(), icon: '⭐', color: '#ffd700', sub: 'نقطة' },
-                { label: 'الدروس', value: stats.totalLessons, icon: '📚', color: '#00d4ff', sub: 'درس' },
-                { label: 'الإتمامات', value: stats.totalCompletions, icon: '✓', color: '#a855f7', sub: 'مكتمل' },
+                { label: 'المستخدمون', value: stats.totalUsers, icon: '👥', color: '#00ff88' },
+                { label: 'إجمالي النقاط', value: stats.totalPoints.toLocaleString(), icon: '⭐', color: '#ffd700' },
+                { label: 'الدروس', value: stats.totalLessons, icon: '📚', color: '#00d4ff' },
+                { label: 'الإتمامات', value: stats.totalCompletions, icon: '✓', color: '#a855f7' },
               ].map((s, i) => (
                 <div key={i} style={{ background: 'rgba(10,21,32,0.8)', border: `1px solid ${s.color}25`, borderRadius: '18px', padding: '26px 20px', position: 'relative', overflow: 'hidden', backdropFilter: 'blur(10px)' }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${s.color}60, transparent)` }}></div>
@@ -283,11 +279,7 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
-
-            {/* Charts Row */}
             <div className="charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-
-              {/* Course Completions Bar Chart */}
               <div style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '18px', padding: '26px', backdropFilter: 'blur(10px)' }}>
                 <p style={{ color: '#7090a8', fontFamily: 'Space Mono, monospace', fontSize: '11px', letterSpacing: '1px', marginBottom: '20px' }}>// إتمامات الدروس حسب المسار</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -298,25 +290,12 @@ export default function AdminPage() {
                         <span style={{ color: c.color, fontFamily: 'Space Mono, monospace', fontSize: '12px', fontWeight: '700' }}>{c.completions}</span>
                       </div>
                       <div style={{ background: 'rgba(26,58,80,0.4)', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
-                        <div
-                          className="bar-fill"
-                          style={{
-                            height: '100%',
-                            borderRadius: '4px',
-                            background: `linear-gradient(90deg, ${c.color}99, ${c.color})`,
-                            width: `${(c.completions / maxCompletions) * 100}%`,
-                            boxShadow: `0 0 8px ${c.color}55`,
-                            ['--w' as any]: `${(c.completions / maxCompletions) * 100}%`,
-                            animationDelay: `${i * 0.1}s`,
-                          }}
-                        />
+                        <div className="bar-fill" style={{ height: '100%', borderRadius: '4px', background: `linear-gradient(90deg, ${c.color}99, ${c.color})`, width: `${(c.completions / maxCompletions) * 100}%`, boxShadow: `0 0 8px ${c.color}55`, ['--w' as any]: `${(c.completions / maxCompletions) * 100}%`, animationDelay: `${i * 0.1}s` }} />
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-
-              {/* Level Distribution */}
               <div style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '18px', padding: '26px', backdropFilter: 'blur(10px)' }}>
                 <p style={{ color: '#7090a8', fontFamily: 'Space Mono, monospace', fontSize: '11px', letterSpacing: '1px', marginBottom: '20px' }}>// توزيع مستويات المستخدمين</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -327,24 +306,11 @@ export default function AdminPage() {
                         <span style={{ color: '#a0c0d8', fontFamily: 'Space Mono, monospace', fontSize: '12px' }}>{l.count} مستخدم</span>
                       </div>
                       <div style={{ background: 'rgba(26,58,80,0.4)', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
-                        <div
-                          className="bar-fill"
-                          style={{
-                            height: '100%',
-                            borderRadius: '4px',
-                            background: `linear-gradient(90deg, ${l.color}77, ${l.color})`,
-                            width: `${(l.count / maxLevelCount) * 100}%`,
-                            boxShadow: `0 0 8px ${l.color}44`,
-                            ['--w' as any]: `${(l.count / maxLevelCount) * 100}%`,
-                            animationDelay: `${i * 0.08}s`,
-                          }}
-                        />
+                        <div className="bar-fill" style={{ height: '100%', borderRadius: '4px', background: `linear-gradient(90deg, ${l.color}77, ${l.color})`, width: `${(l.count / maxLevelCount) * 100}%`, boxShadow: `0 0 8px ${l.color}44`, ['--w' as any]: `${(l.count / maxLevelCount) * 100}%`, animationDelay: `${i * 0.08}s` }} />
                       </div>
                     </div>
                   ))}
                 </div>
-
-                {/* Avg points */}
                 <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #1a3a50', display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#7090a8', fontSize: '12px', fontFamily: 'Space Mono, monospace' }}>متوسط النقاط</span>
                   <span style={{ color: '#ffd700', fontFamily: 'Space Mono, monospace', fontSize: '13px', fontWeight: '700' }}>
@@ -353,11 +319,7 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
-
-            {/* Top completors + Top users row */}
             <div className="charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-
-              {/* Top completors */}
               <div style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '18px', padding: '26px', backdropFilter: 'blur(10px)' }}>
                 <p style={{ color: '#7090a8', fontFamily: 'Space Mono, monospace', fontSize: '11px', letterSpacing: '1px', marginBottom: '18px' }}>// الأكثر إتماماً للدروس</p>
                 {topCompletors.length === 0 ? (
@@ -373,8 +335,6 @@ export default function AdminPage() {
                   </div>
                 ))}
               </div>
-
-              {/* Top points */}
               <div style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '18px', padding: '26px', backdropFilter: 'blur(10px)' }}>
                 <p style={{ color: '#7090a8', fontFamily: 'Space Mono, monospace', fontSize: '11px', letterSpacing: '1px', marginBottom: '18px' }}>// أعلى النقاط</p>
                 {users.slice(0, 5).map((u, i) => (
@@ -393,7 +353,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ===== USERS ===== */}
         {activeTab === 'users' && (
           <div className="fade-up">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
@@ -403,7 +362,6 @@ export default function AdminPage() {
               </div>
               <span style={{ color: '#7090a8', fontFamily: 'Space Mono, monospace', fontSize: '12px' }}>{users.length} USERS</span>
             </div>
-
             <div style={{ background: 'rgba(10,21,32,0.8)', border: '1px solid #1a3a50', borderRadius: '18px', overflow: 'hidden', backdropFilter: 'blur(10px)' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1.5fr', padding: '14px 22px', background: 'rgba(8,15,24,0.8)', borderBottom: '1px solid #1a3a50' }}>
                 {['المستخدم', 'النقاط', 'الصلاحية', 'الإجراءات'].map(h => (
@@ -441,7 +399,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ===== LESSONS ===== */}
         {activeTab === 'lessons' && (
           <div className="fade-up">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
@@ -451,7 +408,6 @@ export default function AdminPage() {
               </div>
               <span style={{ color: '#7090a8', fontFamily: 'Space Mono, monospace', fontSize: '12px' }}>{lessons.length} LESSONS</span>
             </div>
-
             {editingLesson && (
               <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, backdropFilter: 'blur(10px)' }}>
                 <div style={{ background: '#0a1520', border: '1px solid rgba(255,51,102,0.3)', borderRadius: '20px', padding: '36px', width: '480px', position: 'relative', overflow: 'hidden' }} dir="rtl">
@@ -466,7 +422,6 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {Object.entries(COURSE_NAMES).map(([cId, { name, color }]) => {
                 const cl = lessons.filter(l => l.course_id === cId)
@@ -501,17 +456,14 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ===== CTF ===== */}
         {activeTab === 'ctf' && (
           <div className="fade-up">
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
               <div style={{ width: '3px', height: '20px', background: '#ff3366', borderRadius: '2px' }}></div>
               <h2 style={{ color: 'white', fontWeight: '900', fontSize: '20px' }}>إضافة تحدي CTF</h2>
             </div>
-
             <div style={{ background: 'rgba(10,21,32,0.85)', border: '1px solid #1a3a50', borderRadius: '20px', padding: '32px', maxWidth: '700px', backdropFilter: 'blur(10px)', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, transparent, rgba(255,51,102,0.5), transparent)' }}></div>
-
               <div className="ctf-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
                   <label style={lbl}>عنوان التحدي *</label>
@@ -526,12 +478,10 @@ export default function AdminPage() {
                   </select>
                 </div>
               </div>
-
               <div style={{ marginBottom: '16px' }}>
                 <label style={lbl}>وصف التحدي *</label>
                 <textarea style={{ ...inp, minHeight: '100px', resize: 'vertical' }} placeholder="اشرح التحدي وأعط سياقاً..." value={ctf.description} onChange={e => setCTF({ ...ctf, description: e.target.value })} />
               </div>
-
               <div className="ctf-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
                   <label style={lbl}>العلم (Flag) * — مثال: FLAG&#123;test&#125;</label>
@@ -546,7 +496,6 @@ export default function AdminPage() {
                   </select>
                 </div>
               </div>
-
               <div className="ctf-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                 <div>
                   <label style={lbl}>الصعوبة</label>
@@ -559,7 +508,6 @@ export default function AdminPage() {
                   <input style={inp} placeholder="تلميح للمتسابقين..." value={ctf.hints} onChange={e => setCTF({ ...ctf, hints: e.target.value })} />
                 </div>
               </div>
-
               {ctf.title && (
                 <div style={{ background: 'rgba(5,10,15,0.7)', border: '1px solid rgba(255,51,102,0.2)', borderRadius: '12px', padding: '18px', marginBottom: '22px' }}>
                   <p style={{ color: '#7090a8', fontSize: '11px', fontFamily: 'Space Mono, monospace', letterSpacing: '1px', marginBottom: '12px' }}>// PREVIEW</p>
@@ -575,7 +523,6 @@ export default function AdminPage() {
                   </div>
                 </div>
               )}
-
               <button onClick={addCTF}
                 style={{ width: '100%', background: '#ff3366', color: 'white', border: 'none', borderRadius: '12px', padding: '15px', fontFamily: 'Cairo, sans-serif', fontSize: '17px', fontWeight: '900', cursor: 'pointer', transition: 'all 0.25s', boxShadow: '0 6px 30px rgba(255,51,102,0.35)' }}
                 onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 40px rgba(255,51,102,0.45)' }}
