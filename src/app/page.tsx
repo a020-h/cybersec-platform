@@ -1,7 +1,7 @@
 // SERVER COMPONENT — no 'use client', no JS shipped for static sections
 import dynamic from 'next/dynamic'
 
-const LandingHero = dynamic(() => import('@/components/LandingHero'), { ssr: false })
+import LandingHeroWrapper from '@/components/LandingHeroWrapper'
 
 const features = [
   { icon: '🛡️', color: '#00ff88', title: '6 مسارات تعليمية', desc: 'من أساسيات الأمن لاختبار الاختراق والتشفير والهندسة الاجتماعية.' },
@@ -77,7 +77,7 @@ export default function LandingPage() {
       <div style={{ position: 'relative', zIndex: 2 }} dir="rtl">
 
         {/* Hero — client component (auth check, canvas, typing) */}
-        <LandingHero />
+        <LandingHeroWrapper />
 
         {/* ───── SCREENS — pure HTML, zero JS ───── */}
         <section className="section-pad" style={{ padding: '80px 48px', background: 'linear-gradient(180deg,transparent,#08111888,transparent)' }}>
